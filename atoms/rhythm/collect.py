@@ -164,23 +164,29 @@ if __name__ == '__main__':
         total = args.duration // args.interval
         print(f"collecting {total} observations over {args.duration}s (every {args.interval}s)")
         tracker = ActivityTracker()
-        collected = []
+        batch = []
+        saved_total = 0
         start = _time.time()
         try:
             i = 0
             while _time.time() - start < args.duration:
                 obs = tracker.sample()
                 if obs:
-                    collected.append(obs)
+                    batch.append(obs)
                     i += 1
                     if i % 100 == 0 or i == 1:
                         print(f"  {i}/{total} | idle={obs['I']:.0f}s activity={obs['A']:.1f}/min")
+                    if len(batch) >= 50:
+                        save_observations(batch, args.data_dir)
+                        saved_total += len(batch)
+                        batch = []
                 _time.sleep(args.interval)
         except KeyboardInterrupt:
-            print(f"\nstopped early after {len(collected)} observations")
-        if collected:
-            files = save_observations(collected, args.data_dir)
-            print(f"saved {len(collected)} observations across {len(files)} files")
+            print(f"\nstopped early after {saved_total + len(batch)} observations")
+        if batch:
+            save_observations(batch, args.data_dir)
+            saved_total += len(batch)
+        print(f"saved {saved_total} observations to {args.data_dir}")
     else:
         tracker = ActivityTracker()
         obs = tracker.sample()

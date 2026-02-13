@@ -89,19 +89,24 @@ def train(sequences, lang, steps, lr, resume_path=None):
     return atom
 
 
+def _build_test_sequence(lang, obs_dict, n_obs=4):
+    """Build a full-length test sequence from repeated observations."""
+    tokens = [lang.BOS]
+    for _ in range(n_obs):
+        enc = lang.encode_observation(obs_dict)
+        tokens.extend(enc[1:])  # skip BOS from each encoding
+    return tokens[:BLOCK_SIZE + 1]  # trim to model's expected length
+
+
 def run_anomaly_comparison(atom, lang):
     print("\n--- anomaly comparison ---")
 
-    # Normal: afternoon work, moderate idle, Tuesday
-    normal = lang.encode_observation({
-        'I': 120, 'A': 5.0, 'H': 14, 'W': 1,
-    })
+    # Normal: afternoon work, moderate idle, Tuesday (repeated to fill sequence)
+    normal = _build_test_sequence(lang, {'I': 120, 'A': 5.0, 'H': 14, 'W': 1})
     score_n, details_n = sequence_anomaly_score(atom, normal)
 
     # Anomalous: active at 3am on Sunday, no idle
-    anomalous = lang.encode_observation({
-        'I': 10, 'A': 12.0, 'H': 3, 'W': 6,
-    })
+    anomalous = _build_test_sequence(lang, {'I': 10, 'A': 12.0, 'H': 3, 'W': 6})
     score_a, details_a = sequence_anomaly_score(atom, anomalous)
 
     print(f"\nnormal (afternoon work, Tuesday):")
