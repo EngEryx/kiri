@@ -88,12 +88,12 @@ td{padding:7px 10px;border-bottom:1px solid var(--bdr)}
   <div class="ey">from karpathy's microgpt · open source</div>
   <h1>KIRI — <em>Atoms that loop</em></h1>
   <p class="lead">
-    Karpathy proved a GPT fits in <strong>199 lines of pure Python</strong>. No PyTorch. No numpy.<br><br>
+    Karpathy proved a GPT fits in <strong>202 lines of pure Python</strong>. No PyTorch. No numpy.<br><br>
     KIRI takes that atom and changes the language. Instead of English, it speaks <strong>infrastructure state, work patterns, task sequences</strong>. Same architecture. Different vocabulary. Suddenly it's a pattern detector, anomaly finder, and autonomous decision engine — running on a Mac Mini, forever, at zero cost.<br><br>
     <strong>Output feeds input. The loop compounds. The system teaches itself.</strong>
   </p>
   <div style="margin-top:16px">
-    <span class="badge" style="border-color:var(--g);color:var(--g)">4,224 params (microgpt)</span>
+    <span class="badge" style="border-color:var(--g);color:var(--g)">4,192 params (microgpt)</span>
     <span class="badge" style="border-color:var(--b);color:var(--b)">27,840 params (pulse atom)</span>
     <span class="badge" style="border-color:var(--a);color:var(--a)">0 dependencies</span>
     <span class="badge" style="border-color:var(--p);color:var(--p)">pure python</span>
@@ -113,13 +113,13 @@ td{padding:7px 10px;border-bottom:1px solid var(--bdr)}
 <!-- ===== MICROGPT EXPLAINED ===== -->
 <div class="sec on" id="microgpt">
 <h2>microgpt.py — The Complete Algorithm</h2>
-<p>Posted by <a href="https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95">Andrej Karpathy</a> on Feb 11, 2026. A GPT that trains and generates text in <strong>199 lines, 160 lines of actual code</strong>. Zero imports beyond <code>os</code>, <code>math</code>, <code>random</code>.</p>
+<p>Posted by <a href="http://karpathy.github.io/2026/02/12/microgpt/">Andrej Karpathy</a> on Feb 11, 2026 (<a href="https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95">code</a>, <a href="https://karpathy.ai/microgpt.html">rendered</a>). A GPT that trains and generates text in <strong>202 lines, 161 lines of actual code</strong>. Zero imports beyond <code>os</code>, <code>math</code>, <code>random</code>.</p>
 
 <div class="stats">
-  <div class="stat"><div class="n">199</div><div class="l">Total Lines</div></div>
-  <div class="stat"><div class="n">4,224</div><div class="l">Parameters</div></div>
+  <div class="stat"><div class="n">202</div><div class="l">Total Lines</div></div>
+  <div class="stat"><div class="n">4,192</div><div class="l">Parameters</div></div>
   <div class="stat"><div class="n">0</div><div class="l">Dependencies</div></div>
-  <div class="stat"><div class="n">28</div><div class="l">Vocab (chars)</div></div>
+  <div class="stat"><div class="n">27</div><div class="l">Vocab (chars)</div></div>
 </div>
 
 <h3>The 5 Parts</h3>
@@ -130,7 +130,7 @@ td{padding:7px 10px;border-bottom:1px solid var(--bdr)}
 │     This IS backpropagation.                          │
 ├──────────────────────────────────────────────────────┤
 │  2. TOKENIZER (character-level)                       │
-│     26 lowercase letters + BOS = 28 tokens            │
+│     26 lowercase letters + BOS = 27 tokens            │
 │     BOS used as BOTH start and end token              │
 ├──────────────────────────────────────────────────────┤
 │  3. MODEL (decoder-only transformer)                  │
@@ -182,7 +182,7 @@ td{padding:7px 10px;border-bottom:1px solid var(--bdr)}
 <h3>Part 2: Tokenizer</h3>
 <div class="code"><pre>uchars = sorted(set(''.join(docs)))   <span class="dim"># 26 unique chars from names</span>
 BOS = len(uchars)                     <span class="dim"># token 26 = beginning/end</span>
-vocab_size = len(uchars) + 1          <span class="dim"># 27 chars + BOS = 28 total</span></pre></div>
+vocab_size = len(uchars) + 1          <span class="dim"># 26 chars + BOS = 27 total</span></pre></div>
 <div class="co cob"><strong>BOS serves as both start AND end.</strong> No separate EOS token. The model learns "after the last character of a name, BOS comes next" — BOS signals both "start generating" and "stop generating."</div>
 
 <h3>Part 3: Model Architecture</h3>
@@ -212,28 +212,28 @@ vocab_size = len(uchars) + 1          <span class="dim"># 27 chars + BOS = 28 to
   │      + residual                   │
   └───────────┼───────────────────────┘
               │
-         lm_head [28×16]              ← Separate matrix (no weight tying)
+         lm_head [27×16]              ← Separate matrix (no weight tying)
               │
-         logits [28-dim] → softmax → P(next token)
+         logits [27-dim] → softmax → P(next token)
 </pre></div>
 
 <h3>Parameter Count (validated)</h3>
 <table>
 <tr><th>Component</th><th>Shape</th><th>Params</th><th>Purpose</th></tr>
-<tr><td class="g">wte</td><td>28 × 16</td><td>448</td><td>Token embeddings</td></tr>
+<tr><td class="g">wte</td><td>27 × 16</td><td>432</td><td>Token embeddings</td></tr>
 <tr><td class="b">wpe</td><td>16 × 16</td><td>256</td><td>Position embeddings</td></tr>
-<tr><td class="a">lm_head</td><td>28 × 16</td><td>448</td><td>Output projection (separate, not tied to wte)</td></tr>
+<tr><td class="a">lm_head</td><td>27 × 16</td><td>432</td><td>Output projection (separate, not tied to wte)</td></tr>
 <tr><td class="p">attn (wq,wk,wv,wo)</td><td>4 × (16×16)</td><td>1,024</td><td>Query, Key, Value, Output projections</td></tr>
 <tr><td class="p">mlp (fc1,fc2)</td><td>(64×16) + (16×64)</td><td>2,048</td><td>Feed-forward network (4× expansion)</td></tr>
-<tr style="font-weight:700"><td>TOTAL</td><td></td><td class="g">4,224</td><td></td></tr>
+<tr style="font-weight:700"><td>TOTAL</td><td></td><td class="g">4,192</td><td></td></tr>
 </table>
 
 <div class="code"><pre><span class="dim">Formula:</span>
-total = vocab × n_embd          <span class="dim">// wte: 448</span>
+total = vocab × n_embd          <span class="dim">// wte: 432</span>
       + block_size × n_embd     <span class="dim">// wpe: 256</span>
-      + vocab × n_embd          <span class="dim">// lm_head: 448</span>
+      + vocab × n_embd          <span class="dim">// lm_head: 432</span>
       + n_layer × 12 × n_embd²  <span class="dim">// attention + MLP: 3,072</span>
-      = <span class="g">4,224</span></pre></div>
+      = <span class="g">4,192</span></pre></div>
 
 <h3>Part 4 & 5: Training & Inference</h3>
 <div class="code"><pre><span class="dim"># Training: for each name, predict next character at every position</span>
@@ -263,10 +263,10 @@ token_id = random.choices(range(vocab_size), weights=probs)[0]
   ENGLISH ATOM (Karpathy's)              STATE ATOM (KIRI)
   ─────────────────────────              ─────────────────
   vocab: a b c ... z BOS                 vocab: C0..C9 M0..M9 D0..D9 N0 N1 H0..H7 BOS
-  28 tokens                              43 tokens
+  27 tokens                              43 tokens
   trains on: "emma" "olivia"             trains on: "C5 M5 D4 N1 H2" "C1 M2 D4 N1 H0"
   predicts: next character               predicts: next metric value
-  4,224 params                           27,840 params
+  4,192 params                           27,840 params
 
   SAME autograd. SAME attention. SAME training loop.
   Different vocabulary. Different purpose.

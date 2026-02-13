@@ -6,7 +6,7 @@ Pure Python 3. Zero dependencies. 27,840 parameters. Runs on a Mac Mini forever.
 
 **[Read the full explainer](https://engeryx.github.io/kiri/)**
 
-Built on [Karpathy's microgpt.py](https://github.com/karpathy/microgpt) (Feb 2026) — 199 lines, 160 lines of code, 4,224 default params. KIRI replaces English tokens with **state tokens**: CPU buckets, memory buckets, load averages, disk usage. The model learns what's normal and flags what isn't.
+Built on Karpathy's [microgpt.py](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95) ([blog post](http://karpathy.github.io/2026/02/12/microgpt/)) — 202 lines, 161 lines of code, 4,192 default params. KIRI replaces English tokens with **state tokens**: CPU buckets, memory buckets, load averages, disk usage. The model learns what's normal and flags what isn't.
 
 ## Quick Start
 
