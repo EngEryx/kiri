@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+data/*.jsonl
+atoms/*/weights/*.json
+.DS_Store
+kiri-index.html

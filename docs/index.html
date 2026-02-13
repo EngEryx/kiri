@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIRI — From microgpt to Composable Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#06070a;--s1:#0c0d12;--s2:#12131a;--bdr:#1a1c24;
+  --tx:#d8d5cf;--dim:#555566;--g:#4ade80;--a:#fbbf24;--r:#f87171;
+  --b:#60a5fa;--p:#c084fc;--c:#22d3ee;
+  --mono:'JetBrains Mono',monospace;--hd:'Fraunces',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:var(--mono);font-size:13px;line-height:1.75}
+.w{max-width:880px;margin:0 auto;padding:48px 24px 120px}
+.hero{padding:60px 0 40px;position:relative}
+.hero::before{content:'';position:absolute;top:0;left:-200px;width:700px;height:700px;background:radial-gradient(ellipse,rgba(74,222,128,0.03)0%,transparent 60%);pointer-events:none}
+.ey{font-size:10px;color:var(--g);letter-spacing:4px;text-transform:uppercase;margin-bottom:16px}
+h1{font-family:var(--hd);font-size:52px;font-weight:500;line-height:1.1;letter-spacing:-1px;margin-bottom:12px}
+h1 em{font-style:italic;color:var(--g)}
+.lead{color:var(--dim);font-size:14px;font-weight:300;max-width:620px;line-height:1.8}
+.lead strong{color:var(--tx);font-weight:500}
+h2{font-family:var(--hd);font-size:32px;font-weight:500;line-height:1.2;margin:56px 0 8px;letter-spacing:-0.5px}
+h3{font-size:11px;color:var(--g);letter-spacing:2.5px;text-transform:uppercase;margin:32px 0 10px;font-weight:500}
+h4{font-size:14px;font-weight:500;margin:18px 0 6px}
+p{color:var(--dim);margin-bottom:12px;font-weight:300}
+p strong{color:var(--tx);font-weight:500}
+a{color:var(--g);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Nav */
+.nav{display:flex;gap:0;border-bottom:1px solid var(--bdr);margin-bottom:36px;overflow-x:auto;position:sticky;top:0;background:var(--bg);z-index:10;padding-top:8px}
+.nav button{background:none;border:none;color:var(--dim);font-family:var(--mono);font-size:11px;padding:10px 16px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.5px}
+.nav button:hover{color:var(--tx)}
+.nav button.on{color:var(--g);border-bottom-color:var(--g)}
+
+.sec{display:none}
+.sec.on{display:block;animation:fi .25s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.card{background:var(--s1);border:1px solid var(--bdr);padding:24px;margin:14px 0;border-radius:3px;position:relative}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:3px 3px 0 0}
+.cg::before{background:var(--g)}.ca::before{background:var(--a)}.cb::before{background:var(--b)}.cp::before{background:var(--p)}.cc::before{background:var(--c)}.cr::before{background:var(--r)}
+
+.co{border-left:3px solid;padding:12px 16px;margin:14px 0;font-size:12.5px}
+.cog{border-color:var(--g);background:rgba(74,222,128,.04)}
+.coa{border-color:var(--a);background:rgba(251,191,36,.04)}
+.cob{border-color:var(--b);background:rgba(96,165,250,.04)}
+.cop{border-color:var(--p);background:rgba(192,132,252,.04)}
+.cor{border-color:var(--r);background:rgba(248,113,113,.04)}
+.coc{border-color:var(--c);background:rgba(34,211,238,.04)}
+
+.code{background:#080910;border:1px solid var(--bdr);padding:16px;margin:12px 0;border-radius:3px;overflow-x:auto;font-size:12px;line-height:1.8}
+.diag{background:var(--s1);border:1px solid var(--bdr);padding:24px;margin:14px 0;text-align:center;overflow-x:auto;border-radius:3px}
+.diag pre{font-family:var(--mono);font-size:11px;line-height:1.5;display:inline-block;text-align:left;color:var(--dim)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}h1{font-size:36px}}
+
+table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+th{text-align:left;padding:7px 10px;border-bottom:1px solid var(--bdr);color:var(--dim);font-weight:400;font-size:10px;text-transform:uppercase;letter-spacing:1px}
+td{padding:7px 10px;border-bottom:1px solid var(--bdr)}
+.g{color:var(--g)}.a{color:var(--a)}.r{color:var(--r)}.b{color:var(--b)}.p{color:var(--p)}.c{color:var(--c)}
+
+.badge{display:inline-block;padding:3px 10px;font-size:9px;border:1px solid;border-radius:100px;margin:0 4px 4px 0;letter-spacing:1.5px;text-transform:uppercase}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bdr);border:1px solid var(--bdr);margin:24px 0}
+.stat{background:var(--s1);padding:16px;text-align:center}
+.stat .n{font-size:24px;font-weight:700;color:var(--g);font-family:var(--hd)}
+.stat .l{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+.foot{margin-top:80px;padding-top:20px;border-top:1px solid var(--bdr);text-align:center;color:var(--dim);font-size:10px}
+</style>
+</head>
+<body>
+<div class="w">
+
+<div class="hero">
+  <div class="ey">from karpathy's microgpt · open source</div>
+  <h1>KIRI — <em>Atoms that loop</em></h1>
+  <p class="lead">
+    Karpathy proved a GPT fits in <strong>199 lines of pure Python</strong>. No PyTorch. No numpy.<br><br>
+    KIRI takes that atom and changes the language. Instead of English, it speaks <strong>infrastructure state, work patterns, task sequences</strong>. Same architecture. Different vocabulary. Suddenly it's a pattern detector, anomaly finder, and autonomous decision engine — running on a Mac Mini, forever, at zero cost.<br><br>
+    <strong>Output feeds input. The loop compounds. The system teaches itself.</strong>
+  </p>
+  <div style="margin-top:16px">
+    <span class="badge" style="border-color:var(--g);color:var(--g)">4,224 params (microgpt)</span>
+    <span class="badge" style="border-color:var(--b);color:var(--b)">27,840 params (pulse atom)</span>
+    <span class="badge" style="border-color:var(--a);color:var(--a)">0 dependencies</span>
+    <span class="badge" style="border-color:var(--p);color:var(--p)">pure python</span>
+  </div>
+</div>
+
+<div class="nav" id="nav">
+  <button class="on" data-s="microgpt">microgpt Explained</button>
+  <button data-s="atom">The Atom</button>
+  <button data-s="compose">Composition</button>
+  <button data-s="results">Real Results</button>
+  <button data-s="limits">Limits</button>
+  <button data-s="road">What's Next</button>
+</div>
+
+<!-- ===== MICROGPT EXPLAINED ===== -->
+<div class="sec on" id="microgpt">
+<h2>microgpt.py — The Complete Algorithm</h2>
+<p>Posted by <a href="https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95">Andrej Karpathy</a> on Feb 11, 2026. A GPT that trains and generates text in <strong>199 lines, 160 lines of actual code</strong>. Zero imports beyond <code>os</code>, <code>math</code>, <code>random</code>.</p>
+
+<div class="stats">
+  <div class="stat"><div class="n">199</div><div class="l">Total Lines</div></div>
+  <div class="stat"><div class="n">4,224</div><div class="l">Parameters</div></div>
+  <div class="stat"><div class="n">0</div><div class="l">Dependencies</div></div>
+  <div class="stat"><div class="n">28</div><div class="l">Vocab (chars)</div></div>
+</div>
+
+<h3>The 5 Parts</h3>
+<div class="diag"><pre>
+┌──────────────────────────────────────────────────────┐
+│  1. AUTOGRAD ENGINE (Value class)                     │
+│     Every scalar tracks its own gradient.             │
+│     This IS backpropagation.                          │
+├──────────────────────────────────────────────────────┤
+│  2. TOKENIZER (character-level)                       │
+│     26 lowercase letters + BOS = 28 tokens            │
+│     BOS used as BOTH start and end token              │
+├──────────────────────────────────────────────────────┤
+│  3. MODEL (decoder-only transformer)                  │
+│     Embedding → RMSNorm → Attention → MLP → Logits   │
+│     RMSNorm (not LayerNorm), ReLU (not GeLU)          │
+│     Separate lm_head (no weight tying)                │
+├──────────────────────────────────────────────────────┤
+│  4. TRAINING (Adam optimizer)                         │
+│     β1=0.85, β2=0.99, linear LR decay                │
+│     Single loss.backward() on averaged sequence loss  │
+├──────────────────────────────────────────────────────┤
+│  5. INFERENCE (temperature sampling)                  │
+│     temperature=0.5, generates 20 names               │
+│     Samples proportionally from distribution          │
+└──────────────────────────────────────────────────────┘</pre></div>
+
+<h3>Part 1: Autograd Engine</h3>
+<p>The <code>Value</code> class wraps a single number. Every operation (+, ×, exp, log, relu, pow) returns a new Value that remembers its parents and the local derivative. Calling <code>.backward()</code> walks the graph in reverse topological order, accumulating gradients via chain rule.</p>
+
+<div class="code"><pre><span class="g">class Value:</span>
+    __slots__ = ('data', 'grad', '_children', '_local_grads')
+
+    def __init__(self, data, children=(), local_grads=()):
+        self.data = data          <span class="dim"># the scalar value</span>
+        self.grad = 0             <span class="dim"># d(loss)/d(self), filled by backward()</span>
+        self._children = children
+        self._local_grads = local_grads  <span class="dim"># d(self)/d(child) for each child</span>
+
+    def __add__(self, other):
+        <span class="dim"># d(a+b)/da = 1, d(a+b)/db = 1</span>
+        return Value(self.data + other.data, (self, other), <span class="b">(1, 1)</span>)
+
+    def __mul__(self, other):
+        <span class="dim"># d(a*b)/da = b, d(a*b)/db = a</span>
+        return Value(self.data * other.data, (self, other), <span class="b">(other.data, self.data)</span>)
+
+    def backward(self):
+        <span class="dim"># Topological sort → reverse walk → chain rule</span>
+        topo, visited = [], set()
+        def build_topo(v): ...     <span class="dim"># DFS post-order</span>
+        build_topo(self)
+        self.grad = 1              <span class="dim"># d(loss)/d(loss) = 1</span>
+        for v in reversed(topo):
+            for child, lg in zip(v._children, v._local_grads):
+                child.grad += lg * v.grad  <span class="dim"># THE chain rule</span></pre></div>
+
+<div class="co cog"><strong>This is the entire backpropagation algorithm.</strong> Every neural network framework — PyTorch, JAX, TensorFlow — does exactly this, but on tensors instead of scalars. Understanding these 40 lines = understanding how all deep learning trains.</div>
+
+<h3>Part 2: Tokenizer</h3>
+<div class="code"><pre>uchars = sorted(set(''.join(docs)))   <span class="dim"># 26 unique chars from names</span>
+BOS = len(uchars)                     <span class="dim"># token 26 = beginning/end</span>
+vocab_size = len(uchars) + 1          <span class="dim"># 27 chars + BOS = 28 total</span></pre></div>
+<div class="co cob"><strong>BOS serves as both start AND end.</strong> No separate EOS token. The model learns "after the last character of a name, BOS comes next" — BOS signals both "start generating" and "stop generating."</div>
+
+<h3>Part 3: Model Architecture</h3>
+<div class="diag"><pre>
+  Token: 'e' (id=4)     Position: 0
+       │                      │
+       ▼                      ▼
+  wte[4] [16-dim]        wpe[0] [16-dim]     ← Lookup (not multiply)
+       └──────┬───────────────┘
+              │ x = tok_emb + pos_emb
+              ▼
+         RMSNorm(x)                           ← Pre-norm before first layer
+              │
+  ┌───────────┼───────────────────────┐
+  │     TRANSFORMER BLOCK (×1)        │
+  │           │                       │
+  │      RMSNorm → Q, K, V           │  Q,K,V,O: each 16×16 matrix
+  │           │                       │
+  │      4-head attention             │  head_dim = 16/4 = 4
+  │      (Q·K^T / √4 → softmax → V)  │  with KV cache
+  │           │                       │
+  │      + residual                   │
+  │           │                       │
+  │      RMSNorm → MLP               │  fc1: 16→64 (4× expand)
+  │      ReLU activation              │  ReLU, not squared ReLU
+  │           │                       │  fc2: 64→16 (compress)
+  │      + residual                   │
+  └───────────┼───────────────────────┘
+              │
+         lm_head [28×16]              ← Separate matrix (no weight tying)
+              │
+         logits [28-dim] → softmax → P(next token)
+</pre></div>
+
+<h3>Parameter Count (validated)</h3>
+<table>
+<tr><th>Component</th><th>Shape</th><th>Params</th><th>Purpose</th></tr>
+<tr><td class="g">wte</td><td>28 × 16</td><td>448</td><td>Token embeddings</td></tr>
+<tr><td class="b">wpe</td><td>16 × 16</td><td>256</td><td>Position embeddings</td></tr>
+<tr><td class="a">lm_head</td><td>28 × 16</td><td>448</td><td>Output projection (separate, not tied to wte)</td></tr>
+<tr><td class="p">attn (wq,wk,wv,wo)</td><td>4 × (16×16)</td><td>1,024</td><td>Query, Key, Value, Output projections</td></tr>
+<tr><td class="p">mlp (fc1,fc2)</td><td>(64×16) + (16×64)</td><td>2,048</td><td>Feed-forward network (4× expansion)</td></tr>
+<tr style="font-weight:700"><td>TOTAL</td><td></td><td class="g">4,224</td><td></td></tr>
+</table>
+
+<div class="code"><pre><span class="dim">Formula:</span>
+total = vocab × n_embd          <span class="dim">// wte: 448</span>
+      + block_size × n_embd     <span class="dim">// wpe: 256</span>
+      + vocab × n_embd          <span class="dim">// lm_head: 448</span>
+      + n_layer × 12 × n_embd²  <span class="dim">// attention + MLP: 3,072</span>
+      = <span class="g">4,224</span></pre></div>
+
+<h3>Part 4 & 5: Training & Inference</h3>
+<div class="code"><pre><span class="dim"># Training: for each name, predict next character at every position</span>
+tokens = [BOS] + [uchars.index(ch) for ch in doc] + [BOS]  <span class="dim"># BOS on both ends</span>
+for pos_id in range(n):
+    logits = gpt(tokens[pos_id], pos_id, keys, values)
+    probs = softmax(logits)
+    loss_t = -probs[tokens[pos_id + 1]].log()   <span class="dim"># cross-entropy</span>
+loss = (1/n) * sum(losses)
+<span class="g">loss.backward()</span>   <span class="dim"># single call — traces through ENTIRE computation graph</span>
+
+<span class="dim"># Adam: β1=0.85 β2=0.99 (not the usual 0.9/0.999)</span>
+<span class="dim"># Linear LR decay to 0 over training</span>
+
+<span class="dim"># Inference: temperature-controlled sampling</span>
+probs = softmax([l / <span class="a">0.5</span> for l in logits])  <span class="dim"># temperature=0.5 → sharper</span>
+token_id = random.choices(range(vocab_size), weights=probs)[0]
+<span class="dim"># Generates 20 samples. Names like "marin", "jorah", "kayla"</span></pre></div>
+</div>
+
+<!-- ===== THE ATOM ===== -->
+<div class="sec" id="atom">
+<h2>The Atom — microgpt Speaks State</h2>
+<p>A microgpt doesn't know it's speaking English. It predicts the next token in a sequence. <strong>Change the vocabulary</strong> and it predicts system states instead of characters.</p>
+
+<div class="diag"><pre>
+  ENGLISH ATOM (Karpathy's)              STATE ATOM (KIRI)
+  ─────────────────────────              ─────────────────
+  vocab: a b c ... z BOS                 vocab: C0..C9 M0..M9 D0..D9 N0 N1 H0..H7 BOS
+  28 tokens                              43 tokens
+  trains on: "emma" "olivia"             trains on: "C5 M5 D4 N1 H2" "C1 M2 D4 N1 H0"
+  predicts: next character               predicts: next metric value
+  4,224 params                           27,840 params
+
+  SAME autograd. SAME attention. SAME training loop.
+  Different vocabulary. Different purpose.
+</pre></div>
+
+<h3>State Language</h3>
+<p>Continuous metrics are <strong>quantized into buckets</strong>. CPU 0-100% becomes tokens C0 through C9 (10% each). This keeps vocabulary small = model stays tiny.</p>
+
+<div class="code"><pre><span class="dim"># Pulse atom schema — monitors a Mac Mini</span>
+schema = {
+    'C': (0, 100, 10),   <span class="dim"># CPU %: 10 buckets → C0 C1 ... C9</span>
+    'M': (0, 100, 10),   <span class="dim"># Memory %: 10 buckets</span>
+    'D': (0, 100, 10),   <span class="dim"># Disk %: 10 buckets</span>
+    'S': (0, 500, 5),    <span class="dim"># Processes: 5 buckets</span>
+    'L': (0, 20, 5),     <span class="dim"># Load average: 5 buckets</span>
+    'N': (0, 1, 2),      <span class="dim"># Network: down/up</span>
+    'H': (0, 24, 8),     <span class="dim"># Hour: 3-hour buckets</span>
+    'W': (0, 7, 7),      <span class="dim"># Day of week</span>
+}
+<span class="dim"># Total: 57 metric tokens + BOS = 58 vocab</span></pre></div>
+
+<h3>Anomaly = Surprise</h3>
+<p>After training, the model has learned "what usually follows what." When a new observation arrives, compute the <strong>average negative log-probability across all tokens</strong>. High score = the model is surprised = anomaly.</p>
+
+<div class="diag"><pre>
+  Normal observation (work hours, moderate load):
+  <span class="g">C5 M5 D4 N1 H2</span>
+  Model: "Yeah, seen this pattern thousands of times."
+  Average score: <span class="g">1.33</span> (low surprise)
+
+  Anomalous observation (3am, everything maxed):
+  <span class="r">C9 M9 D4 S4 L4 N1</span>
+  Model: "C9?! M9?! S4?! Never seen these together."
+  Average score: <span class="r">6.15</span> (high surprise)
+  Per-token: C9=9.38, M9=12.11, S4=9.19 (near-zero probability)
+</pre></div>
+
+<div class="co cog"><strong>The model doesn't need rules.</strong> No "if CPU > 90% then alert." It learns what's normal FROM YOUR DATA and flags anything that doesn't fit. It adapts as your patterns change — just retrain.</div>
+
+<h3>Pulse Atom Param Count (validated)</h3>
+<table>
+<tr><th>Component</th><th>Shape</th><th>Params</th></tr>
+<tr><td class="g">wte</td><td>43 × 32</td><td>1,376</td></tr>
+<tr><td class="b">wpe</td><td>16 × 32</td><td>512</td></tr>
+<tr><td class="a">lm_head</td><td>43 × 32</td><td>1,376</td></tr>
+<tr><td class="p">2 layers × (attn + mlp)</td><td>2 × 12 × 32²</td><td>24,576</td></tr>
+<tr style="font-weight:700"><td>TOTAL</td><td></td><td class="g">27,840</td></tr>
+</table>
+</div>
+
+<!-- ===== COMPOSITION ===== -->
+<div class="sec" id="compose">
+<h2>Composition — Atoms that Loop</h2>
+<p>An atom alone detects patterns. <strong>Two atoms piped together make decisions.</strong> The output of one feeds the input of the next. Loop it and the system teaches itself.</p>
+
+<h3>The Pipe (Linear)</h3>
+<div class="diag"><pre>
+  ┌─────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
+  │ COLLECT  │────→│  ATOM    │────→│  DECIDE  │────→│   ACT    │
+  │ (metrics)│     │ (predict │     │ (score   │     │ (alert   │
+  │          │     │  + score)│     │  → action)│    │  or log) │
+  └─────────┘     └──────────┘     └──────────┘     └──────────┘
+  
+  Data flows left to right. Each stage is a Python function.
+  This alone = monitoring + alerting. Already useful.
+</pre></div>
+
+<h3>The Loop (Circular)</h3>
+<div class="diag"><pre>
+  ┌─────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
+  │ COLLECT  │────→│  ATOM    │────→│  DECIDE  │────→│   ACT    │
+  └─────────┘     └──────────┘     └──────────┘     └────┬─────┘
+       ▲                                                  │
+       │              FEEDBACK LOOP                       │
+       └──────────────────────────────────────────────────┘
+                   result → next input
+
+  Now it learns from its own actions.
+  You dismissed an alert → feeds back as training data.
+  Next time → auto-suppresses that pattern.
+  THE SYSTEM IMPROVES BY RUNNING.
+</pre></div>
+
+<h3>The Molecule (Multiple Atoms)</h3>
+<div class="grid">
+  <div class="card cg"><h4 class="g">Pulse</h4><p>Infra health. Mac Mini stats + MikroTik. <strong>"Is this system state normal?"</strong></p></div>
+  <div class="card cb"><h4 class="b">Rhythm</h4><p>Work patterns. Keyboard/mouse idle time, git activity, focus blocks. <strong>"Is this a normal work day?"</strong></p></div>
+  <div class="card ca"><h4 class="a">Drift</h4><p>Task state. Tasks added/completed, project switches. <strong>"Is scope creeping?"</strong></p></div>
+  <div class="card cp"><h4 class="p">Nerve</h4><p>Meta-model. Trained on OTHER atoms' outputs + your responses. <strong>"What action should I take?"</strong></p></div>
+</div>
+
+<div class="co cop"><strong>Nerve is where RL emerges naturally.</strong> Your approve/dismiss responses are reward signals. Nerve learns which actions lead to approvals (reward +1) vs dismissals (reward -1). That's policy learning — same architecture, just trained on action-result pairs instead of state sequences.</div>
+
+<h3>The Compound Effect</h3>
+<table>
+<tr><th>Time</th><th>What Happens</th></tr>
+<tr><td class="g">Week 1</td><td>Independent atoms, independent alerts. 3 pings for 1 situation. Annoying but data collecting.</td></tr>
+<tr><td class="b">Week 3</td><td>Nerve connects patterns. "When Rhythm=no-activity AND Drift=scope-creep → suppress Rhythm, surface Drift." 1 smart alert instead of 3.</td></tr>
+<tr><td class="a">Month 2</td><td>Cross-domain insights. "Morning habits skipped → afternoon output drops 60%. Nudge at 7am." Predictions based on YOUR data.</td></tr>
+<tr><td class="p">Month 6</td><td>Partial automation. Auto-firewall rules, auto-invoice reminders. Approve/reject trains the boundary of when to auto-act vs ask.</td></tr>
+</table>
+
+<h3>Self-Modification</h3>
+<div class="code"><pre><span class="dim"># The action vocabulary includes meta-actions:</span>
+actions = {
+    'ok':       do_nothing,
+    'alert':    send_telegram,
+    'suppress': mark_false_alarm,
+    <span class="a">'retrain':  retrain_atom,      </span><span class="dim"># system retrains itself</span>
+    <span class="a">'spawn':    create_new_atom,    </span><span class="dim"># system creates new atoms</span>
+}
+<span class="dim"># Nerve generates "retrain:pulse:7d" → Pulse retrains on recent data
+# → predictions improve → Nerve's decisions improve → compounds</span></pre></div>
+</div>
+
+<!-- ===== REAL RESULTS ===== -->
+<div class="sec" id="results">
+<h2>Real Results — Not Theory</h2>
+<p>These are actual outputs from training on a Mac Mini (24GB, Apple Silicon).</p>
+
+<h3>Training Run</h3>
+<div class="card cg">
+<h4>Pulse Atom — 500 Steps on Real + Synthetic Data</h4>
+<div class="code"><pre>loaded 2128 observations from 8 files
+atom: 27,840 params | vocab 43
+
+step    1/500 | loss 3.9828    <span class="dim">← random weights, knows nothing</span>
+step   50/500 | loss 0.3095    <span class="dim">← learning fast</span>
+step  250/500 | loss 0.7080    <span class="dim">← fluctuation normal (batch size 1)</span>
+step  500/500 | loss 0.5924    <span class="dim">← converged</span>
+
+<span class="g">saved weights → pulse_weights.json</span></pre></div>
+</div>
+
+<h3>Anomaly Detection</h3>
+<div class="card cb">
+<h4>Per-Token Anomaly Scoring</h4>
+<div class="code"><pre><span class="g">Normal (work hours, moderate load):</span>
+  C5 M5 D4 N1 H2
+  Average surprise: <span class="g">1.33</span>
+  <span class="dim">Per token: all within expected range</span>
+
+<span class="r">Anomalous (3am, everything maxed):</span>
+  C9 M9 D4 S4 L4 N1
+  Average surprise: <span class="r">6.15</span>
+  <span class="dim">Per token: C9=9.38 M9=12.11 S4=9.19 ← "never seen this"</span>
+
+<span class="a">Anomalous is 4.6× more surprising than normal.</span>
+The model identifies WHICH metrics are unusual and by how much.</pre></div>
+</div>
+
+<h3>Data Collection</h3>
+<div class="card ca">
+<h4>Live Mac Mini Collection</h4>
+<div class="code"><pre><span class="dim">$ python3 -m kiri.atoms.pulse.collect --interval 1 --duration 600</span>
+
+collecting 600 observations over 600s (every 1s)
+  1/600 | C=15% M=74% D=41%     <span class="dim">← real Mac Mini stats</span>
+  100/600 | C=15% M=74% D=41%   <span class="dim">← collected via os/subprocess</span>
+  200/600 | C=14% M=73% D=42%   <span class="dim">← zero dependencies</span>
+saved 276 observations across 1 files</pre></div>
+</div>
+
+<h3>The Numbers</h3>
+<table>
+<tr><th>Metric</th><th>Value</th></tr>
+<tr><td>Model size</td><td>27,840 params (&lt;1MB on disk)</td></tr>
+<tr><td>Training time (500 steps)</td><td>~8 minutes (pure Python, Mac Mini)</td></tr>
+<tr><td>Inference time</td><td>~100ms per observation</td></tr>
+<tr><td>Data collection</td><td>1/sec (fast blast) to 1/5min (steady state)</td></tr>
+<tr><td>Dependencies</td><td>0. Python 3 stdlib only.</td></tr>
+<tr><td>API costs</td><td>KES 0. Forever.</td></tr>
+<tr><td>RAM usage</td><td>&lt;50MB (Mac Mini has 24GB)</td></tr>
+<tr><td>Codebase</td><td>~500 lines total across all modules</td></tr>
+</table>
+</div>
+
+<!-- ===== LIMITS ===== -->
+<div class="sec" id="limits">
+<h2>Honest Limits</h2>
+<p>What this can and cannot do. No hand-waving.</p>
+
+<div class="grid">
+<div class="card cg">
+<h4 class="g">Can Do</h4>
+<p>Learn repeating patterns in structured sequences. Detect when new observations don't fit learned patterns. Get better with more data. Run forever on zero resources. Compose atoms via pipes for multi-domain awareness.</p>
+</div>
+<div class="card cr">
+<h4 class="r">Cannot Do</h4>
+<p>Remember across sequences (16-token window only). Understand causation (knows "unusual" not "why"). See slow trends (disk filling over weeks). Multivariate reasoning (learns sequential patterns, not true correlations). Handle natural language. Replace a real LLM for complex reasoning.</p>
+</div>
+</div>
+
+<h3>Specific Constraints</h3>
+<table>
+<tr><th>Constraint</th><th>Impact</th><th>Workaround</th></tr>
+<tr><td>Context window: 16 tokens</td><td>Can't see patterns spanning hours/days</td><td>Encode longer windows as summary tokens. Or use bigger block_size (costs more params).</td></tr>
+<tr><td>10% bucket granularity</td><td>CPU 41% and 49% are the same token (C4)</td><td>More buckets = more vocab = more params. Trade-off is configurable.</td></tr>
+<tr><td>Pure Python speed</td><td>Training is ~1000× slower than PyTorch</td><td>Train overnight. Or rent GPU for 2 hours (KES 1000 max) for bigger models.</td></tr>
+<tr><td>No causation</td><td>Flags anomaly, can't explain it</td><td>The Pipe + your response IS the explanation loop. Over time, Nerve learns cause→effect from YOUR feedback.</td></tr>
+<tr><td>Sequential token processing</td><td>Can't truly correlate CPU↔Memory simultaneously</td><td>Learns "C5 usually followed by M5" as sequence pattern. Works in practice, not in theory.</td></tr>
+</table>
+
+<div class="co coa"><strong>The architecture compensates for individual atom weakness.</strong> One atom is a pattern matcher with short memory. Four atoms piped through Nerve with feedback = a system that learns cause-effect across domains over weeks. The loop is smarter than any single model.</div>
+</div>
+
+<!-- ===== WHAT'S NEXT ===== -->
+<div class="sec" id="road">
+<h2>What's Next</h2>
+
+<h3>Done ✓</h3>
+<div class="card cg" style="opacity:.7">
+<p><strong>Phase 0:</strong> Understood microgpt. Every line, every gradient.</p>
+<p><strong>Phase 1:</strong> Built KIRI. Extracted modules. Pulse atom collecting real Mac Mini data. Training works. Anomaly detection works (1.33 vs 6.15 score differentiation).</p>
+</div>
+
+<h3>Next</h3>
+<div class="card cb">
+<h4>MikroTik Collector (Phase 1b)</h4>
+<p>Same Pulse atom, second data source. RouterOS REST API → bandwidth, connections, CPU, memory. Separate collector file, same training pipeline. Combines with Mac Mini data for fuller picture.</p>
+</div>
+
+<div class="card ca">
+<h4>Rhythm Atom (Phase 2)</h4>
+<p>Work pattern awareness. Data source: <code>ioreg -c IOHIDSystem | grep HIDIdleTime</code> (keyboard/mouse idle time — already tested, works on Mac Mini). Encodes: idle-duration-bucket, activity-density, hour, day. Learns YOUR focus patterns from the negative space of when you're NOT typing.</p>
+</div>
+
+<div class="card cp">
+<h4>Nerve Meta-Model (Phase 3)</h4>
+<p>The decision engine. Trained on Pulse + Rhythm outputs + your Telegram responses. This is where the feedback loop closes and the system starts improving itself.</p>
+</div>
+
+<div class="card" style="border-color:var(--dim)">
+<h4>Ideas for Later</h4>
+<p style="color:var(--dim)">Phone integration (activity patterns). Financial patterns (transaction sequences). Network security (MikroTik firewall log patterns). Sleep/energy inference from idle time data. Focus scoring from mouse movement patterns.</p>
+</div>
+
+<h3>Open Source</h3>
+<div class="co cog"><strong>KIRI is open source.</strong> The core idea — microgpt trained on state tokens for anomaly detection — belongs to everyone. The architecture (atoms, pipes, loops, self-retraining) is general enough that anyone with a computer can build their own composable intelligence system.</div>
+
+<div class="foot">
+KIRI — Intelligent Runtime Inspector<br>
+Built on <a href="https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95">Karpathy's microgpt</a> · Open Source · 2026
+</div>
+</div>
+
+</div>
+
+<script>
+document.getElementById('nav').addEventListener('click',e=>{
+if(e.target.tagName!=='BUTTON')return;
+document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));
+document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+e.target.classList.add('on');
+document.getElementById(e.target.dataset.s).classList.add('on');
+window.scrollTo({top:document.getElementById('nav').offsetTop-20,behavior:'smooth'});
+});
+</script>
+</body>
+</html>

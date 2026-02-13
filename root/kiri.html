@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIRI — Composable Tiny Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #06070a;
+  --s1: #0c0d12;
+  --s2: #12131a;
+  --border: #1a1c24;
+  --text: #d8d5cf;
+  --dim: #555566;
+  --g: #4ade80;
+  --a: #fbbf24;
+  --r: #f87171;
+  --b: #60a5fa;
+  --p: #c084fc;
+  --c: #22d3ee;
+  --mono: 'JetBrains Mono', monospace;
+  --head: 'Fraunces', serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;line-height:1.75}
+.w{max-width:880px;margin:0 auto;padding:48px 24px 120px}
+
+/* Hero */
+.hero{padding:80px 0 48px;position:relative}
+.hero::before{content:'';position:absolute;top:0;left:-200px;width:700px;height:700px;background:radial-gradient(ellipse,rgba(74,222,128,0.03)0%,transparent 60%);pointer-events:none}
+.eyebrow{font-size:10px;color:var(--g);letter-spacing:4px;text-transform:uppercase;margin-bottom:16px}
+h1{font-family:var(--head);font-size:56px;font-weight:500;line-height:1.1;letter-spacing:-1px;margin-bottom:16px}
+h1 em{font-style:italic;color:var(--g)}
+.lead{color:var(--dim);font-size:15px;font-weight:300;max-width:620px;line-height:1.8}
+.lead strong{color:var(--text);font-weight:500}
+
+h2{font-family:var(--head);font-size:36px;font-weight:500;line-height:1.2;margin:64px 0 8px;letter-spacing:-0.5px}
+h3{font-size:11px;color:var(--g);letter-spacing:2.5px;text-transform:uppercase;margin:36px 0 12px;font-weight:500}
+h4{font-size:15px;font-weight:500;margin:20px 0 8px}
+p{color:var(--dim);margin-bottom:14px;font-weight:300}
+p strong{color:var(--text);font-weight:500}
+
+.card{background:var(--s1);border:1px solid var(--border);padding:28px;margin:18px 0;border-radius:4px;position:relative}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:4px 4px 0 0}
+.card-g::before{background:var(--g)} .card-a::before{background:var(--a)}
+.card-b::before{background:var(--b)} .card-p::before{background:var(--p)}
+.card-c::before{background:var(--c)} .card-r::before{background:var(--r)}
+
+.callout{border-left:3px solid;padding:14px 18px;margin:16px 0;font-size:12.5px}
+.cg{border-color:var(--g);background:rgba(74,222,128,0.04)}
+.ca{border-color:var(--a);background:rgba(251,191,36,0.04)}
+.cb{border-color:var(--b);background:rgba(96,165,250,0.04)}
+.cp{border-color:var(--p);background:rgba(192,132,252,0.04)}
+.cr{border-color:var(--r);background:rgba(248,113,113,0.04)}
+.cc{border-color:var(--c);background:rgba(34,211,238,0.04)}
+
+.code{background:#080910;border:1px solid var(--border);padding:18px;margin:14px 0;border-radius:3px;overflow-x:auto;font-size:12px;line-height:1.8}
+.diag{background:var(--s1);border:1px solid var(--border);padding:28px;margin:18px 0;text-align:center;overflow-x:auto;border-radius:3px}
+.diag pre{font-family:var(--mono);font-size:11px;line-height:1.5;display:inline-block;text-align:left;color:var(--dim)}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+
+.tag{display:inline-block;padding:3px 10px;font-size:9px;border:1px solid;border-radius:100px;margin:0 4px 4px 0;letter-spacing:1.5px;text-transform:uppercase}
+
+table{width:100%;border-collapse:collapse;font-size:12px;margin:14px 0}
+th{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);color:var(--dim);font-weight:400;font-size:10px;text-transform:uppercase;letter-spacing:1px}
+td{padding:8px 10px;border-bottom:1px solid var(--border)}
+
+.g{color:var(--g)}.a{color:var(--a)}.r{color:var(--r)}.b{color:var(--b)}.p{color:var(--p)}.c{color:var(--c)}
+</style>
+</head>
+<body>
+<div class="w">
+
+<div class="hero">
+  <div class="eyebrow">eryx labs · from karpathy's microgpt</div>
+  <h1>Atoms that <em>loop</em></h1>
+  <p class="lead">
+    A microgpt is a sequence predictor. Feed it any pattern, it learns what comes next. 
+    <strong>That's the atom.</strong><br><br>
+    Now: what if the output of one atom feeds the input of another?<br>
+    What if the last atom's output feeds back to the first?<br>
+    What if the loop generates the data that retrains itself?<br><br>
+    <strong>That's not a chatbot. That's a living system.</strong>
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>The Atom</h2>
+<p>A microgpt doesn't know it's speaking English. It just predicts the next token in a sequence. So <strong>change the language</strong>. Teach it to speak "infrastructure state" or "work pattern" or "action log." Same 200 lines. Different vocabulary. Suddenly it's useful.</p>
+
+<div class="diag"><pre>
+  ENGLISH ATOM                          STATE ATOM
+  ─────────────                          ──────────
+  vocab: a b c ... z                     vocab: C0 C1 C2 M0 M1 N0 N1 H0 H1 H2 H3
+  trains on: "emma" "olivia" "kai"       trains on: "C2 M3 N1 H1" "C0 M1 N1 H0"
+  generates: "marin" "jorah"             predicts: given C2 M3 N1 → next is H1 (95%)
+
+  SAME architecture. SAME training.      Different vocabulary. Different purpose.
+  SAME 200 lines of Python.              Now it speaks YOUR system's language.
+</pre></div>
+
+<div class="callout cg">
+  <strong>Key insight:</strong> Any data that can be expressed as a sequence of discrete tokens can be learned by microgpt. Time series? Quantize into buckets → tokens. Events? Map to token IDs. Git commits per hour? Token. Tasks completed? Token. Heart rate zones? Token. The model doesn't care about meaning — it learns <em>patterns in sequences</em>.
+</div>
+
+<h3>Atom Types You Can Build Today</h3>
+<div class="grid">
+  <div class="card card-g">
+    <h4 class="g">Atom: Pulse</h4>
+    <p>Speaks <strong>infrastructure state</strong>. Vocabulary: CPU buckets, memory buckets, disk, network status, hour-of-day. Trained on your Proxmox/MikroTik metrics collected every 5 min.</p>
+    <p><strong>Superpower:</strong> "This CPU pattern at 3am is something I've never seen before."</p>
+    <span class="tag" style="border-color:var(--g);color:var(--g)">anomaly detection</span>
+  </div>
+  <div class="card card-b">
+    <h4 class="b">Atom: Rhythm</h4>
+    <p>Speaks <strong>your behavior</strong>. Vocabulary: git commits/hr, tasks touched, apps active, focus blocks, time-of-day. Trained on your daily patterns over weeks.</p>
+    <p><strong>Superpower:</strong> "You usually have 3 commits by now. Zero today. Something's off."</p>
+    <span class="tag" style="border-color:var(--b);color:var(--b)">pattern awareness</span>
+  </div>
+  <div class="card card-a">
+    <h4 class="a">Atom: Drift</h4>
+    <p>Speaks <strong>task state</strong>. Vocabulary: tasks-added, tasks-completed, scope-changes, project-switches, day-of-week. Trained on your Notion/task history.</p>
+    <p><strong>Superpower:</strong> "3 new tasks added, 0 completed, 2 project switches. This is your scope creep pattern."</p>
+    <span class="tag" style="border-color:var(--a);color:var(--a)">scope creep detector</span>
+  </div>
+  <div class="card card-p">
+    <h4 class="p">Atom: Nerve</h4>
+    <p>Speaks <strong>action-result</strong>. Vocabulary: trigger-type, action-taken, result-observed. Trained on the output of the other atoms + what happened next.</p>
+    <p><strong>Superpower:</strong> "Last time Pulse flagged at 3am + Rhythm showed no work, it was a backup cron. Auto-suppress."</p>
+    <span class="tag" style="border-color:var(--p);color:var(--p)">decision engine</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>The Molecule</h2>
+<p>An atom alone detects patterns. <strong>Two atoms piped together make decisions.</strong> Three atoms looped together learn from their own actions. That's the molecule — where composition creates emergent intelligence from dumb parts.</p>
+
+<div class="diag"><pre>
+  THE PIPE (linear composition — like Unix pipes)
+  ═══════════════════════════════════════════════
+
+  ┌─────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
+  │ OBSERVE  │────→│  PULSE   │────→│  NERVE   │────→│   ACT    │
+  │ (collect │     │ (predict │     │ (decide  │     │ (webhook │
+  │  metrics)│     │  + score)│     │  action) │     │  or log) │
+  └─────────┘     └──────────┘     └──────────┘     └──────────┘
+
+  Each box is a function. Atom.predict_next IS a pipe stage.
+  Data flows left to right. Output of one = input of next.
+  This is already useful. This is monitoring + alerting.
+
+
+  THE LOOP (circular composition — this is where it gets wild)
+  ═════════════════════════════════════════════════════════════
+
+  ┌─────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
+  │ OBSERVE  │────→│  PULSE   │────→│  NERVE   │────→│   ACT    │
+  │          │     │          │     │          │     │          │
+  └─────────┘     └──────────┘     └──────────┘     └────┬─────┘
+       ▲                                                  │
+       │              THE FEEDBACK LOOP                   │
+       │                                                  │
+       └──────────────────────────────────────────────────┘
+                    action result becomes
+                    next observation input
+
+  Now the system LEARNS FROM ITS OWN ACTIONS.
+  Nerve predicted "alert" → you snoozed it → that snooze event
+  feeds back as training data → Nerve learns "this pattern = false alarm"
+  → next time, it auto-suppresses.
+
+  THE SYSTEM IMPROVES ITSELF BY RUNNING.
+</pre></div>
+
+<div class="callout ca">
+  <strong>This is exactly how biological nervous systems work.</strong> Sensory input → pattern recognition → decision → action → sensory feedback from the action → refined pattern recognition. The loop IS the intelligence. No single neuron is smart. The wiring is smart.
+</div>
+
+<!-- ============================================================ -->
+<h2>The Loop That Builds</h2>
+<p>Here's where it gets <strong>truly wild</strong>. What if the action vocabulary includes "retrain"?</p>
+
+<div class="code"><pre>
+<span class="g"># The action vocabulary isn't just "alert" or "suppress".</span>
+<span class="g"># It includes META-ACTIONS:</span>
+
+ACTION_VOCAB = {
+    'ok':       do_nothing,          <span class="dim"># all clear</span>
+    'alert':    send_telegram,       <span class="dim"># ping Eric</span>
+    'log':      write_to_sqlite,     <span class="dim"># record for later</span>
+    'suppress': mark_false_alarm,    <span class="dim"># learn to ignore this</span>
+
+    <span class="a"># META-ACTIONS — the system modifies itself</span>
+    'retrain':  retrain_atom,        <span class="dim"># retrain a specific atom on recent data</span>
+    'spawn':    create_new_atom,     <span class="dim"># train a NEW atom on a NEW data stream</span>
+    'merge':    combine_atom_output, <span class="dim"># wire two atoms together that weren't</span>
+    'split':    fork_data_stream,    <span class="dim"># break one atom into two specialists</span>
+}
+
+<span class="g"># When Nerve generates "retrain:pulse:7d"</span>
+<span class="g"># → the orchestrator retrains Pulse on last 7 days of data</span>
+<span class="g"># → Pulse gets better at current patterns</span>
+<span class="g"># → its predictions improve → Nerve's decisions improve</span>
+<span class="g"># → Nerve learns that "retrain" was the right call</span>
+<span class="g"># → THE LOOP COMPOUNDS</span>
+</pre></div>
+
+<div class="callout cp">
+  <strong>This is self-improving without AGI.</strong> The models are tiny and dumb. They can't "think." But the LOOP — observe → predict → act → learn from result → observe better — creates a system that gets measurably better at its job every cycle. Like compound interest, but for automation.
+</div>
+
+<h3>Concrete Example: One Week of Looping</h3>
+
+<table>
+  <tr><th>Day</th><th>What Happens</th><th>System Learns</th></tr>
+  <tr>
+    <td class="g">Day 1</td>
+    <td>Pulse alerts: "CPU spike at 3am." You dismiss it.</td>
+    <td>Nerve logs: {3am, CPU_spike, dismiss}. Nothing yet.</td>
+  </tr>
+  <tr>
+    <td class="g">Day 2</td>
+    <td>Same alert. You dismiss again.</td>
+    <td>Nerve now has 2 data points. Pattern emerging.</td>
+  </tr>
+  <tr>
+    <td class="b">Day 3</td>
+    <td>Same alert. Nerve generates: <strong>"suppress"</strong></td>
+    <td>Auto-suppressed! You didn't get pinged. Nerve learned from your dismissals.</td>
+  </tr>
+  <tr>
+    <td class="a">Day 5</td>
+    <td>Pulse alerts: "CPU spike at 3am BUT memory also spiking." Different pattern from usual 3am spike.</td>
+    <td>Nerve sees: {3am, CPU_spike, MEM_spike} — this combo is NEW. Doesn't suppress. Alerts you.</td>
+  </tr>
+  <tr>
+    <td class="r">Day 5</td>
+    <td>You check — it's a runaway process. You kill it. You acknowledge the alert.</td>
+    <td>Nerve logs: {3am, CPU_spike+MEM_spike, acknowledge}. Learns: this variant IS important.</td>
+  </tr>
+  <tr>
+    <td class="p">Day 7</td>
+    <td>Nerve generates: <strong>"retrain:pulse:7d"</strong></td>
+    <td>Pulse retrains on last 7 days. Now knows: 3am CPU spike = normal. 3am CPU+MEM spike = anomaly. More precise.</td>
+  </tr>
+</table>
+
+<div class="callout cg">
+  <strong>After one week:</strong> The system went from "alert on everything unusual" to "alert on things that ACTUALLY matter to Eric." No code changes. No manual rules. The loop taught itself. And next week it'll be even better.
+</div>
+
+<!-- ============================================================ -->
+<h2>What It Looks Like Running</h2>
+<p>On your Mac Mini, this is a Python daemon. Here's the real architecture.</p>
+
+<div class="diag"><pre>
+┌─────────────────────────────────────────────────────────┐
+│                   MAC MINI (always on)                   │
+│                                                          │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              kiri.py (daemon)                     │   │
+│  │                                                   │   │
+│  │  COLLECTORS (cron, every 5 min)                   │   │
+│  │  ├─ proxmox_api → CPU, MEM, disk, VM status      │   │
+│  │  ├─ mikrotik_api → bandwidth, connections, VPN    │   │
+│  │  ├─ git_log → commits, files changed              │   │
+│  │  ├─ notion_api → tasks added/done/moved           │   │
+│  │  └─ system → Mac Mini itself (load, uptime)       │   │
+│  │         │                                         │   │
+│  │         ▼                                         │   │
+│  │  STATE ENCODER                                    │   │
+│  │  raw metrics → quantized tokens → sequences       │   │
+│  │         │                                         │   │
+│  │         ▼                                         │   │
+│  │  ATOMS (loaded from saved weights)                │   │
+│  │  ├─ pulse.atom (infra patterns)     ~4K params    │   │
+│  │  ├─ rhythm.atom (work patterns)     ~4K params    │   │
+│  │  ├─ drift.atom (task patterns)      ~4K params    │   │
+│  │  └─ nerve.atom (action decisions)   ~4K params    │   │
+│  │         │                                         │   │
+│  │         ▼                                         │   │
+│  │  PIPE ENGINE                                      │   │
+│  │  anomaly scores → decision → action               │   │
+│  │         │                                         │   │
+│  │         ├──→ Telegram bot (alerts/nudges)          │   │
+│  │         ├──→ SQLite (all events, for retraining)   │   │
+│  │         └──→ RETRAIN scheduler (overnight)         │   │
+│  │               └─ loads recent data from SQLite     │   │
+│  │               └─ retrains atoms                    │   │
+│  │               └─ saves new weights                 │   │
+│  │               └─ loop continues with better atoms  │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                          │
+│  Total: ~16K params. <1MB disk. 0 API costs. Forever.    │
+└─────────────────────────────────────────────────────────┘
+</pre></div>
+
+<!-- ============================================================ -->
+<h2>The Extra: Beyond Infra</h2>
+<p>You said "think something extra without focusing on the heart only." Here's where the same atom architecture does <strong>completely different things</strong>:</p>
+
+<div class="grid">
+  <div class="card card-c">
+    <h4 class="c">Atom: Bodyguard</h4>
+    <p>Speaks <strong>network security</strong>. Vocabulary: source-geo, port-bucket, packet-size-bucket, protocol, time-of-day. Trained on your MikroTik firewall logs.</p>
+    <p><strong>What it does:</strong> Learns normal traffic patterns for Truth Wireless / AS329254. Flags unusual patterns — port scans, unusual geos, DDoS ramp-ups — BEFORE they become incidents.</p>
+    <p><strong>Pipe output:</strong> Feeds MikroTik API to auto-add firewall rules. Action→result→retrain loop makes it adaptive.</p>
+    <span class="tag" style="border-color:var(--c);color:var(--c)">security</span>
+    <span class="tag" style="border-color:var(--c);color:var(--c)">auto-block</span>
+  </div>
+  <div class="card card-a">
+    <h4 class="a">Atom: Cashflow</h4>
+    <p>Speaks <strong>money patterns</strong>. Vocabulary: income-bucket, expense-category, day-of-month, balance-trend. Trained on your M-Pesa/bank transaction patterns.</p>
+    <p><strong>What it does:</strong> Learns: "rent hits Day 5, Safaricom Day 10, irregular client payments cluster around Day 15-20." Predicts cash crunches 5-7 days ahead.</p>
+    <p><strong>Pipe output:</strong> "KES balance will likely drop below X by Thursday. 2 invoices outstanding." → Telegram nudge on Monday.</p>
+    <span class="tag" style="border-color:var(--a);color:var(--a)">finance</span>
+    <span class="tag" style="border-color:var(--a);color:var(--a)">prediction</span>
+  </div>
+  <div class="card card-r">
+    <h4 class="r">Atom: Twins</h4>
+    <p>Speaks <strong>routine patterns</strong>. Vocabulary: meal-time, nap-time, activity-type, mood-bucket, day-of-week. For your twins' daily rhythms.</p>
+    <p><strong>What it does:</strong> Learns: "After short naps on Tuesdays, evenings are rough." Predicts difficult periods. Nudges you to prep.</p>
+    <p><strong>Pipe output:</strong> "Pattern match: short nap today + missed afternoon snack. Brace for a long evening. Consider early dinner." → Telegram at 4pm.</p>
+    <span class="tag" style="border-color:var(--r);color:var(--r)">family</span>
+    <span class="tag" style="border-color:var(--r);color:var(--r)">anticipation</span>
+  </div>
+  <div class="card card-g">
+    <h4 class="g">Atom: Gospel</h4>
+    <p>Speaks <strong>habit patterns</strong>. Vocabulary: prayer-done, reading-done, exercise-done, sleep-bucket, energy-bucket, day-type. Your Stoic/Christian daily disciplines.</p>
+    <p><strong>What it does:</strong> Learns: "When you skip morning prayer AND exercise, your task completion drops 60% that day." Correlation → causation testing through data.</p>
+    <p><strong>Pipe output:</strong> "You haven't logged prayer or exercise today. Historical pattern: this correlates with low-output days. 10 min now could change the trajectory."</p>
+    <span class="tag" style="border-color:var(--g);color:var(--g)">habits</span>
+    <span class="tag" style="border-color:var(--g);color:var(--g)">correlation</span>
+  </div>
+</div>
+
+<div class="callout cc">
+  <strong>Every atom above is the SAME code.</strong> Same 200-line microgpt. Same training loop. Same anomaly scoring. Same pipe mechanism. You just change the StateLanguage schema and the data collector. Copy-paste → new capability in an afternoon.
+</div>
+
+<!-- ============================================================ -->
+<h2>The Compound Effect</h2>
+<p>Here's what makes this <strong>not</strong> just "a bunch of scripts with ML sprinkled on." It's the cross-atom connections.</p>
+
+<div class="diag"><pre>
+  WEEK 1: Independent atoms, independent alerts
+  ──────────────────────────────────────────────
+  Pulse: "Server CPU high" → alert
+  Rhythm: "No git commits" → alert
+  Drift: "3 new tasks, 0 done" → alert
+
+  You get 3 separate pings. Annoying. But data is collecting.
+
+
+  WEEK 3: Nerve starts connecting dots
+  ──────────────────────────────────────────────
+  Nerve sees pattern: when Rhythm="no commits" AND Drift="scope creep"
+  → you ALWAYS acknowledge Drift alert but dismiss Rhythm alert
+  → Nerve learns: suppress Rhythm when Drift is active
+  → you now get 1 smart alert instead of 3 dumb ones
+
+
+  MONTH 2: Cross-domain insights emerge
+  ──────────────────────────────────────────────
+  Nerve discovers: Gospel="skipped prayer+exercise" on Day N
+  → Drift="scope creep" on Day N (same day, not coincidence)
+  → Rhythm="low output" on Day N+1
+
+  System generates compound nudge at 7am:
+  "Morning disciplines skipped. Pattern: today will feel scattered,
+   tomorrow's output drops. Smallest move: 10 min prayer, then
+   pick ONE task from your existing list. No new projects."
+
+  That's not a canned message. That's a PREDICTION based on YOUR DATA
+  from a 16K-param system running on your desk.
+
+
+  MONTH 6: Partial automation
+  ──────────────────────────────────────────────
+  Bodyguard detects port scan → auto-adds MikroTik rule → logs result
+  Pulse detects disk growth → auto-triggers cleanup script → logs result
+  Cashflow predicts crunch → auto-drafts invoice reminder → you approve
+  
+  The approve/reject feedback trains Nerve on WHEN to auto-act
+  vs WHEN to ask. The boundary shifts as trust builds.
+
+  YOU are training an autonomous agent. One feedback at a time.
+</pre></div>
+
+<!-- ============================================================ -->
+<h2>Build Plan</h2>
+<p><strong>What you actually do, in order, starting tonight.</strong></p>
+
+<div class="card card-g">
+  <h4>Phase 0: Tonight (1 hour)</h4>
+  <p>Run atom.py on your Mac Mini. See it train. See it predict. See the anomaly scores. Understand every line. This is you looking inside the brain.</p>
+  <div class="code"><pre>python3 atom.py   # it just runs, no dependencies</pre></div>
+</div>
+
+<div class="card card-b">
+  <h4>Phase 1: This Weekend (4 hours)</h4>
+  <p>Build the first REAL collector. One cron job that polls your Proxmox API every 5 minutes, encodes CPU/MEM/disk/network into state tokens, and appends to a file. Let it collect for 1 week.</p>
+  <div class="code"><pre>
+# collector_proxmox.py — runs every 5 min via cron
+import requests, json, time
+
+def collect():
+    # Your Proxmox API call here
+    stats = requests.get('https://proxmox:8006/api2/json/nodes/pve/status',
+                        headers={'Authorization': 'PVEAPIToken=...'}, verify=False).json()
+    cpu = stats['data']['cpu'] * 100
+    mem = stats['data']['memory']['used'] / stats['data']['memory']['total'] * 100
+    disk = stats['data']['rootfs']['used'] / stats['data']['rootfs']['total'] * 100
+    
+    # Append to state log
+    entry = {'ts': time.time(), 'C': cpu, 'M': mem, 'D': disk, 'N': 1, 'H': time.localtime().tm_hour}
+    with open('states_pulse.jsonl', 'a') as f:
+        f.write(json.dumps(entry) + '\n')
+
+collect()
+  </pre></div>
+  <p><strong>Cost: KES 0. Just a cron job.</strong></p>
+</div>
+
+<div class="card card-a">
+  <h4>Phase 2: Week 2 (one evening)</h4>
+  <p>After 1 week of data (~2,000 observations), train Pulse for real. Run overnight. Save weights. Set up the pipe: Pulse → anomaly score → Telegram alert via bot API.</p>
+  <p><strong>You now have a self-trained infrastructure monitor that cost nothing, depends on nothing, and runs forever.</strong></p>
+</div>
+
+<div class="card card-p">
+  <h4>Phase 3: Week 3-4 (one evening each)</h4>
+  <p>Add Rhythm (git log collector) and Drift (Notion API collector). Same pattern: collect → train → pipe → alert. Each is a copy-paste of Phase 2 with a different StateLanguage.</p>
+</div>
+
+<div class="card card-c">
+  <h4>Phase 4: Month 2</h4>
+  <p>Build Nerve. Train it on the combined output logs of Pulse + Rhythm + Drift + your responses (acknowledge/dismiss/act). This is where cross-domain intelligence emerges.</p>
+  <p><strong>Optional GPU boost (KES 1000):</strong> If training Nerve on accumulated data is too slow in pure Python, rent a GPU instance for 2 hours on vast.ai or Lambda. Train bigger Nerve model (200K+ params). Download weights. Run inference on Mac Mini (inference is fast, training is slow).</p>
+</div>
+
+<div class="card card-r">
+  <h4>Phase ∞: The Loop</h4>
+  <p>Once Nerve is running, it generates retrain signals. The system improves itself. You just live your life and occasionally approve/reject its suggestions. Each interaction makes it smarter. <strong>This never stops compounding.</strong></p>
+</div>
+
+<!-- ============================================================ -->
+<h2>The Math</h2>
+
+<table>
+  <tr><th>Item</th><th>Spec</th></tr>
+  <tr><td>Atoms</td><td>4-6 models, ~4K params each</td></tr>
+  <tr><td>Total params</td><td>~16-24K (all models combined)</td></tr>
+  <tr><td>Disk</td><td><1MB total for all weights</td></tr>
+  <tr><td>RAM</td><td><50MB (your Mac Mini has 24GB)</td></tr>
+  <tr><td>Inference time</td><td>~100ms per atom per observation (pure Python)</td></tr>
+  <tr><td>Training time</td><td>~2-4 hours per atom on Mac Mini (overnight)</td></tr>
+  <tr><td>API costs</td><td>KES 0. Forever.</td></tr>
+  <tr><td>GPU budget</td><td>KES 1000 max if you want to boost Nerve once</td></tr>
+  <tr><td>Dependencies</td><td>Python 3. That's it. No pip install anything.</td></tr>
+  <tr><td>Code</td><td>atom.py (200 lines) + collectors (~50 lines each) + daemon (~100 lines)</td></tr>
+</table>
+
+<div class="callout cg">
+  <strong>Total system: ~500 lines of Python. Zero dependencies. Runs on your desk. Trained on your data. Gets smarter every week. And you built it from the atom up — you understand every multiply, every gradient, every weight update. Because you read Karpathy's 200 lines.</strong>
+</div>
+
+<div style="margin-top:80px;padding-top:24px;border-top:1px solid var(--border);text-align:center;color:var(--dim);font-size:11px">
+  KIRI — Kenyan Intelligent Runtime Inspector<br>
+  Built from Karpathy's microgpt · Eryx Labs · 2026
+</div>
+
+</div>
+</body>
+</html>
