@@ -262,9 +262,9 @@ token_id = random.choices(range(vocab_size), weights=probs)[0]
 <div class="diag"><pre>
   ENGLISH ATOM (Karpathy's)              STATE ATOM (KIRI)
   ─────────────────────────              ─────────────────
-  vocab: a b c ... z BOS                 vocab: C0..C9 M0..M9 D0..D9 N0 N1 H0..H7 BOS
+  vocab: a b c ... z BOS                 vocab: C0..C9 M0..M9 D0..D9 S0..S4 L0..L4 N0 N1 BOS
   27 tokens                              43 tokens
-  trains on: "emma" "olivia"             trains on: "C5 M5 D4 N1 H2" "C1 M2 D4 N1 H0"
+  trains on: "emma" "olivia"             trains on: "C5 M5 D4 S1 L1 N1" "C9 M9 D4 S4 L4 N1"
   predicts: next character               predicts: next metric value
   4,192 params                           27,840 params
 
@@ -280,22 +280,20 @@ schema = {
     'C': (0, 100, 10),   <span class="dim"># CPU %: 10 buckets → C0 C1 ... C9</span>
     'M': (0, 100, 10),   <span class="dim"># Memory %: 10 buckets</span>
     'D': (0, 100, 10),   <span class="dim"># Disk %: 10 buckets</span>
-    'S': (0, 500, 5),    <span class="dim"># Processes: 5 buckets</span>
+    'S': (0, 100, 5),    <span class="dim"># Swap %: 5 buckets</span>
     'L': (0, 20, 5),     <span class="dim"># Load average: 5 buckets</span>
     'N': (0, 1, 2),      <span class="dim"># Network: down/up</span>
-    'H': (0, 24, 8),     <span class="dim"># Hour: 3-hour buckets</span>
-    'W': (0, 7, 7),      <span class="dim"># Day of week</span>
 }
-<span class="dim"># Total: 57 metric tokens + BOS = 58 vocab</span></pre></div>
+<span class="dim"># Total: 42 metric tokens + BOS = 43 vocab</span></pre></div>
 
 <h3>Anomaly = Surprise</h3>
 <p>After training, the model has learned "what usually follows what." When a new observation arrives, compute the <strong>average negative log-probability across all tokens</strong>. High score = the model is surprised = anomaly.</p>
 
 <div class="diag"><pre>
   Normal observation (work hours, moderate load):
-  <span class="g">C5 M5 D4 N1 H2</span>
+  <span class="g">C5 M5 D4 S1 L1 N1</span>
   Model: "Yeah, seen this pattern thousands of times."
-  Average score: <span class="g">1.33</span> (low surprise)
+  Average score: <span class="g">0.72</span> (low surprise)
 
   Anomalous observation (3am, everything maxed):
   <span class="r">C9 M9 D4 S4 L4 N1</span>
@@ -405,16 +403,16 @@ step  500/500 | loss 0.5924    <span class="dim">← converged</span>
 <div class="card cb">
 <h4>Per-Token Anomaly Scoring</h4>
 <div class="code"><pre><span class="g">Normal (work hours, moderate load):</span>
-  C5 M5 D4 N1 H2
-  Average surprise: <span class="g">1.33</span>
+  C5 M5 D4 S1 L1 N1
+  Average surprise: <span class="g">0.72</span>
   <span class="dim">Per token: all within expected range</span>
 
 <span class="r">Anomalous (3am, everything maxed):</span>
   C9 M9 D4 S4 L4 N1
-  Average surprise: <span class="r">6.15</span>
+  Average surprise: <span class="r">7.98</span>
   <span class="dim">Per token: C9=9.38 M9=12.11 S4=9.19 ← "never seen this"</span>
 
-<span class="a">Anomalous is 4.6× more surprising than normal.</span>
+<span class="a">Anomalous is 11× more surprising than normal.</span>
 The model identifies WHICH metrics are unusual and by how much.</pre></div>
 </div>
 
@@ -434,7 +432,7 @@ saved 276 observations across 1 files</pre></div>
 <table>
 <tr><th>Metric</th><th>Value</th></tr>
 <tr><td>Model size</td><td>27,840 params (&lt;1MB on disk)</td></tr>
-<tr><td>Training time (500 steps)</td><td>~8 minutes (pure Python, Mac Mini)</td></tr>
+<tr><td>Training time (500 steps)</td><td>~8min pure Python, 17.6s PyTorch/MPS (27x faster)</td></tr>
 <tr><td>Inference time</td><td>~100ms per observation</td></tr>
 <tr><td>Data collection</td><td>1/sec (fast blast) to 1/5min (steady state)</td></tr>
 <tr><td>Dependencies</td><td>0. Python 3 stdlib only.</td></tr>
@@ -465,7 +463,7 @@ saved 276 observations across 1 files</pre></div>
 <tr><th>Constraint</th><th>Impact</th><th>Workaround</th></tr>
 <tr><td>Context window: 16 tokens</td><td>Can't see patterns spanning hours/days</td><td>Encode longer windows as summary tokens. Or use bigger block_size (costs more params).</td></tr>
 <tr><td>10% bucket granularity</td><td>CPU 41% and 49% are the same token (C4)</td><td>More buckets = more vocab = more params. Trade-off is configurable.</td></tr>
-<tr><td>Pure Python speed</td><td>Training is ~1000× slower than PyTorch</td><td>Train overnight. Or rent GPU for 2 hours (KES 1000 max) for bigger models.</td></tr>
+<tr><td>Pure Python speed</td><td>Training is ~27× slower than PyTorch/MPS</td><td>Use AtomTorch for fast training (17.6s vs ~8min). Pure Python works everywhere with zero dependencies.</td></tr>
 <tr><td>No causation</td><td>Flags anomaly, can't explain it</td><td>The Pipe + your response IS the explanation loop. Over time, Nerve learns cause→effect from YOUR feedback.</td></tr>
 <tr><td>Sequential token processing</td><td>Can't truly correlate CPU↔Memory simultaneously</td><td>Learns "C5 usually followed by M5" as sequence pattern. Works in practice, not in theory.</td></tr>
 </table>
@@ -480,28 +478,23 @@ saved 276 observations across 1 files</pre></div>
 <h3>Done ✓</h3>
 <div class="card cg" style="opacity:.7">
 <p><strong>Phase 0:</strong> Understood microgpt. Every line, every gradient.</p>
-<p><strong>Phase 1:</strong> Built KIRI. Extracted modules. Pulse atom collecting real Mac Mini data. Training works. Anomaly detection works (1.33 vs 6.15 score differentiation).</p>
+<p><strong>Phase 1:</strong> Extracted core modules. Pulse atom collecting real Mac Mini data. MikroTik REST API collector. Training works. Anomaly detection works (0.72 normal vs 7.98 anomalous = 11x differentiation).</p>
+<p><strong>Phase 2:</strong> Rhythm atom. Keyboard/mouse idle time via <code>ioreg HIDIdleTime</code>. Learns work patterns, flags 3am Sunday activity.</p>
+<p><strong>Phase 3:</strong> Drift atom. Manual CLI task logging. Detects scope creep (4.06 vs 0.47 = 8.6x). 8 tasks added / 0 completed / 5 switches = anomaly.</p>
+<p><strong>Phase 4:</strong> Nerve meta-model. Trained on other atoms' scores + user feedback. Predicts: ok, alert, suppress, retrain. Action vocabulary with feedback loop.</p>
+<p><strong>Phase 5:</strong> PyTorch/MPS acceleration. AtomTorch drop-in replacement. 500 steps in 17.6s (27x faster). Same anomaly detection quality.</p>
+<p><strong>Phase 6:</strong> Full daemon. Scheduled collection, all 4 atoms scoring, Nerve decisions, Telegram alerts.</p>
 </div>
 
 <h3>Next</h3>
 <div class="card cb">
-<h4>MikroTik Collector (Phase 1b)</h4>
-<p>Same Pulse atom, second data source. RouterOS REST API → bandwidth, connections, CPU, memory. Separate collector file, same training pipeline. Combines with Mac Mini data for fuller picture.</p>
-</div>
-
-<div class="card ca">
-<h4>Rhythm Atom (Phase 2)</h4>
-<p>Work pattern awareness. Data source: <code>ioreg -c IOHIDSystem | grep HIDIdleTime</code> (keyboard/mouse idle time — already tested, works on Mac Mini). Encodes: idle-duration-bucket, activity-density, hour, day. Learns YOUR focus patterns from the negative space of when you're NOT typing.</p>
-</div>
-
-<div class="card cp">
-<h4>Nerve Meta-Model (Phase 3)</h4>
-<p>The decision engine. Trained on Pulse + Rhythm outputs + your Telegram responses. This is where the feedback loop closes and the system starts improving itself.</p>
+<h4>Production Hardening</h4>
+<p>Run the daemon on a Mac Mini for weeks. Collect real data across all atoms. Retrain on accumulated observations. Let Nerve learn from real approve/dismiss feedback.</p>
 </div>
 
 <div class="card" style="border-color:var(--dim)">
 <h4>Ideas for Later</h4>
-<p style="color:var(--dim)">Phone integration (activity patterns). Financial patterns (transaction sequences). Network security (MikroTik firewall log patterns). Sleep/energy inference from idle time data. Focus scoring from mouse movement patterns.</p>
+<p style="color:var(--dim)">Network security atom (MikroTik firewall logs). Financial patterns (M-Pesa/bank transactions). Phone integration (activity patterns). Sleep/energy inference from idle time data. Focus scoring from mouse movement patterns. Auto-retraining triggered by Nerve.</p>
 </div>
 
 <h3>Open Source</h3>
