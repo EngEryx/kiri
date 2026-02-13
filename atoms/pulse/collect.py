@@ -86,6 +86,15 @@ def collect_local():
             if nums:
                 load_avg = float(nums[0])  # 1-minute load
 
+        # Network check: can we reach a DNS root?
+        net = 0
+        try:
+            import socket
+            socket.create_connection(('1.1.1.1', 53), timeout=2).close()
+            net = 1
+        except OSError:
+            pass
+
         now = datetime.now()
         return {
             'C': max(0, min(100, cpu)),
@@ -93,7 +102,7 @@ def collect_local():
             'D': max(0, min(100, disk)),
             'S': max(0, min(100, swap)),
             'L': max(0, min(20, load_avg)),
-            'N': 1,
+            'N': net,
             'H': now.hour,
             'ts': now.isoformat()
         }
@@ -154,8 +163,9 @@ def generate_synthetic(days=7, interval_minutes=5):
     return observations
 
 
-def save_observations(observations, data_dir):
-    """Save observations as JSONL, one file per day."""
+def save_observations(observations, data_dir, overwrite=False):
+    """Save observations as JSONL, one file per day.
+    Default appends to existing files (daemon-safe). Use overwrite=True for clean writes."""
     data_dir = Path(data_dir)
     data_dir.mkdir(parents=True, exist_ok=True)
 
@@ -164,10 +174,11 @@ def save_observations(observations, data_dir):
         day = obs['ts'][:10]
         by_day.setdefault(day, []).append(obs)
 
+    mode = 'w' if overwrite else 'a'
     files_written = []
     for day, day_obs in sorted(by_day.items()):
         path = data_dir / f'pulse_{day}.jsonl'
-        with open(path, 'w') as f:
+        with open(path, mode) as f:
             for obs in day_obs:
                 f.write(json.dumps(obs) + '\n')
         files_written.append(str(path))
@@ -193,7 +204,7 @@ if __name__ == '__main__':
     if args.dry_run:
         print(f"generating {args.days} days of synthetic pulse data...")
         obs = generate_synthetic(days=args.days)
-        files = save_observations(obs, args.data_dir)
+        files = save_observations(obs, args.data_dir, overwrite=True)
         print(f"wrote {len(obs)} observations across {len(files)} files:")
         for f in files:
             print(f"  {f}")
