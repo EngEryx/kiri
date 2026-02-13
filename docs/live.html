@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIRI — Live Forward Pass</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<style>
+:root{
+  --bg:#06070a;--s1:#0c0d12;--s2:#13141a;--bdr:#1a1c24;
+  --tx:#d8d5cf;--dim:#555566;--g:#4ade80;--a:#fbbf24;--r:#f87171;
+  --b:#60a5fa;--p:#c084fc;--c:#22d3ee;--w:#ffffff;
+  --mono:'JetBrains Mono',monospace;--hd:'Fraunces',serif;
+}
+:root.light{
+  --bg:#f8f8f6;--s1:#ffffff;--s2:#f0f0ec;--bdr:#d8d8d0;
+  --tx:#1a1a1a;--dim:#666670;--g:#16a34a;--a:#b45309;--r:#dc2626;
+  --b:#2563eb;--p:#7c3aed;--c:#0891b2;--w:#000000;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:var(--mono);font-size:12px;line-height:1.6;overflow-x:hidden}
+.wrap{display:grid;grid-template-columns:1fr 320px;height:100vh}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;grid-template-rows:55vh 45vh}}
+
+/* Canvas area */
+#viz-wrap{position:relative;overflow:hidden}
+canvas{width:100%;height:100%;display:block}
+.hud{position:absolute;top:16px;left:16px;z-index:10;pointer-events:none}
+.hud h1{font-family:var(--hd);font-size:20px;font-weight:400}
+.hud h1 em{color:var(--g);font-style:italic}
+.hud .sub{font-size:9px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.top-nav{position:absolute;top:12px;right:16px;z-index:10;display:flex;gap:8px;align-items:center}
+.top-nav a,.top-nav button{background:var(--s1);border:1px solid var(--bdr);color:var(--dim);font-family:var(--mono);font-size:10px;padding:4px 12px;cursor:pointer;border-radius:100px;text-decoration:none;transition:all .15s}
+.top-nav a:hover,.top-nav button:hover{border-color:var(--g);color:var(--g)}
+
+/* Controls */
+.ctrl{position:absolute;bottom:16px;left:16px;right:16px;display:flex;gap:8px;align-items:center;z-index:10}
+.btn{background:var(--s1);border:1px solid var(--bdr);color:var(--tx);font-family:var(--mono);font-size:10px;padding:6px 14px;cursor:pointer;border-radius:3px;transition:all .15s;letter-spacing:.5px}
+.btn:hover{border-color:var(--g);color:var(--g)}
+.btn.active{background:var(--g);color:var(--bg);border-color:var(--g)}
+.speed{flex:1;display:flex;align-items:center;gap:6px;font-size:9px;color:var(--dim)}
+.speed input{flex:1;accent-color:var(--g)}
+
+/* Side panel */
+.panel{background:var(--s1);border-left:1px solid var(--bdr);overflow-y:auto;padding:16px}
+@media(max-width:900px){.panel{border-left:none;border-top:1px solid var(--bdr)}}
+.panel h2{font-family:var(--hd);font-size:18px;font-weight:400;margin-bottom:4px}
+.panel .sub{font-size:9px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px}
+
+.stage{background:var(--s2);border:1px solid var(--bdr);border-radius:3px;margin-bottom:8px;overflow:hidden;transition:all .2s}
+.stage.active{border-color:var(--g)}
+.stage.active .stage-head{background:rgba(74,222,128,0.06)}
+.stage.done .stage-head{opacity:0.5}
+.stage-head{padding:8px 12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.stage-name{font-size:11px;font-weight:500}
+.stage-badge{font-size:9px;padding:2px 8px;border-radius:100px;border:1px solid var(--bdr);color:var(--dim)}
+.stage.active .stage-badge{border-color:var(--g);color:var(--g)}
+.stage.done .stage-badge{border-color:var(--dim);color:var(--dim)}
+.stage-body{padding:0 12px 10px;font-size:10px;color:var(--dim);display:none;line-height:1.7}
+.stage.active .stage-body{display:block;animation:fi .2s ease}
+
+.vec{display:flex;gap:2px;margin:4px 0;flex-wrap:wrap}
+.vec-val{background:var(--bg);padding:1px 4px;border-radius:2px;font-size:9px;font-variant-numeric:tabular-nums;min-width:32px;text-align:center;border:1px solid var(--bdr);transition:all .2s}
+.vec-val.hot{border-color:var(--g);color:var(--g);background:rgba(74,222,128,0.08)}
+.vec-val.attn{border-color:var(--a);color:var(--a);background:rgba(251,191,36,0.08)}
+
+.prob-bar{display:flex;align-items:center;gap:6px;margin:2px 0;font-size:9px}
+.prob-bar .bar{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+.prob-bar .fill{height:100%;border-radius:3px;transition:width .3s}
+.prob-bar .lbl{width:24px;text-align:right;color:var(--dim)}
+.prob-bar .pct{width:36px;font-variant-numeric:tabular-nums}
+
+.token-display{background:var(--bg);border:1px solid var(--bdr);padding:8px 12px;border-radius:3px;margin:8px 0;text-align:center}
+.token-display .char{font-size:24px;font-weight:700;color:var(--g)}
+.token-display .id{font-size:9px;color:var(--dim);margin-top:2px}
+
+.generated{margin-top:12px;padding:10px 12px;background:var(--bg);border:1px solid var(--bdr);border-radius:3px}
+.generated .word{font-size:16px;font-weight:500;color:var(--g);letter-spacing:1px}
+.generated .gdim{font-size:9px;color:var(--dim);margin-top:4px}
+
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.pulsing{animation:pulse 1s ease infinite}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="viz-wrap">
+  <div class="hud">
+    <h1>KIRI <em>live</em></h1>
+    <div class="sub">forward pass · real calculations · 4,192 params (microgpt default)</div>
+  </div>
+  <div class="top-nav">
+    <a href="./">explainer</a>
+    <a href="params.html">params 3D</a>
+    <button id="themeToggle">light</button>
+  </div>
+  <canvas id="viz"></canvas>
+  <div class="ctrl">
+    <button class="btn" id="btn-step">Step &#9654;</button>
+    <button class="btn" id="btn-play">Auto &#9654;&#9654;</button>
+    <button class="btn" id="btn-reset">Reset</button>
+    <div class="speed">
+      <span>Speed</span>
+      <input type="range" id="speed" min="1" max="20" value="8">
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel">
+  <h2>Forward Pass</h2>
+  <div class="sub" id="panel-sub">Input: "emma" &rarr; predicting next char</div>
+
+  <div class="token-display" id="token-display">
+    <div class="char" id="current-char">BOS</div>
+    <div class="id">Token <span id="current-id">26</span> &middot; Position <span id="current-pos">0</span></div>
+  </div>
+
+  <div id="stages"></div>
+
+  <div class="generated" id="gen-area" style="display:none">
+    <div class="word" id="gen-word"></div>
+    <div class="gdim" id="gen-info"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ============================================================
+// microgpt forward pass — real math, real weights
+// vocab=27 (26 chars + BOS), n_embd=8 (smaller for visualization)
+// Same architecture as KIRI atoms, different vocabulary
+// ============================================================
+
+const VOCAB = 27, EMBD = 8, HEADS = 2, LAYERS = 1, BLOCK = 8;
+const HEAD_DIM = EMBD / HEADS;
+
+let _seed = 42;
+function rand() { _seed = (_seed * 16807 + 0) % 2147483647; return (_seed - 1) / 2147483646; }
+function randn() { const u1 = rand(), u2 = rand(); return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); }
+
+const chars = 'abcdefghijklmnopqrstuvwxyz';
+const BOS = 26;
+const stoi = {}; const itos = {};
+for(let i=0;i<chars.length;i++){stoi[chars[i]]=i;itos[i]=chars[i];}
+stoi['BOS']=BOS;itos[BOS]='BOS';
+
+function makeMatrix(rows, cols, std=0.08) {
+  const m = [];
+  for(let r=0;r<rows;r++){
+    m[r]=[];
+    for(let c=0;c<cols;c++) m[r][c]=randn()*std;
+  }
+  return m;
+}
+
+const W = {
+  wte: makeMatrix(VOCAB, EMBD),
+  wpe: makeMatrix(BLOCK, EMBD),
+  lm_head: makeMatrix(VOCAB, EMBD),
+  wq: makeMatrix(EMBD, EMBD),
+  wk: makeMatrix(EMBD, EMBD),
+  wv: makeMatrix(EMBD, EMBD),
+  wo: makeMatrix(EMBD, EMBD),
+  fc1: makeMatrix(4*EMBD, EMBD),
+  fc2: makeMatrix(EMBD, 4*EMBD),
+};
+
+function linear(x, w) { return w.map(row => row.reduce((s,wi,i)=>s+wi*x[i],0)); }
+function softmax(logits) {
+  const max = Math.max(...logits);
+  const exps = logits.map(v => Math.exp(v - max));
+  const sum = exps.reduce((a,b)=>a+b,0);
+  return exps.map(e => e/sum);
+}
+function rmsnorm(x) {
+  const ms = x.reduce((s,v)=>s+v*v,0)/x.length;
+  const scale = 1/Math.sqrt(ms+1e-5);
+  return x.map(v=>v*scale);
+}
+function relu(x) { return Math.max(0, x); }
+function vadd(a,b) { return a.map((v,i)=>v+b[i]); }
+
+// ============================================================
+// STAGED FORWARD PASS
+// ============================================================
+
+function forwardPass(tokenId, posId, kvCache) {
+  const stages = [];
+
+  const tokEmb = [...W.wte[tokenId]];
+  const posEmb = [...W.wpe[posId % BLOCK]];
+  const x0 = vadd(tokEmb, posEmb);
+  stages.push({
+    name: 'Embedding', desc: `wte[${tokenId}] + wpe[${posId}]`,
+    detail: 'Token embedding + position embedding',
+    values: { tokEmb, posEmb, result: x0 }, color: '#4ade80',
+  });
+
+  const x1 = rmsnorm(x0);
+  stages.push({
+    name: 'RMSNorm (pre)', desc: 'normalize \u2192 scale by 1/\u221A(mean(x\u00B2))',
+    detail: 'Normalize before transformer block',
+    values: { input: x0, result: x1 }, color: '#22d3ee',
+  });
+
+  const x_norm = rmsnorm(x1);
+  const q = linear(x_norm, W.wq);
+  const k = linear(x_norm, W.wk);
+  const v = linear(x_norm, W.wv);
+  kvCache.keys.push(k);
+  kvCache.values.push(v);
+  stages.push({
+    name: 'Q, K, V', desc: 'Q=Wq\u00B7x  K=Wk\u00B7x  V=Wv\u00B7x',
+    detail: 'Project into query, key, value spaces',
+    values: { q, k, v }, color: '#c084fc',
+  });
+
+  const allAttnWeights = [];
+  const xAttn = [];
+  for (let h = 0; h < HEADS; h++) {
+    const hs = h * HEAD_DIM;
+    const qh = q.slice(hs, hs + HEAD_DIM);
+    const khs = kvCache.keys.map(ki => ki.slice(hs, hs + HEAD_DIM));
+    const vhs = kvCache.values.map(vi => vi.slice(hs, hs + HEAD_DIM));
+    const scores = khs.map(kh =>
+      qh.reduce((s, qi, j) => s + qi * kh[j], 0) / Math.sqrt(HEAD_DIM)
+    );
+    const weights = softmax(scores);
+    allAttnWeights.push(weights);
+    const headOut = [];
+    for (let j = 0; j < HEAD_DIM; j++) {
+      headOut.push(vhs.reduce((s, vh, t) => s + weights[t] * vh[j], 0));
+    }
+    xAttn.push(...headOut);
+  }
+  stages.push({
+    name: 'Attention', desc: `${HEADS} heads \u00B7 softmax(Q\u00B7K^T/\u221A${HEAD_DIM}) \u00B7 V`,
+    detail: 'Multi-head self-attention with KV cache',
+    values: { attnWeights: allAttnWeights, output: xAttn }, color: '#c084fc',
+  });
+
+  const attnOut = linear(xAttn, W.wo);
+  const x2 = vadd(attnOut, x1);
+  stages.push({
+    name: 'Attn Out + Residual', desc: 'Wo\u00B7attn + residual',
+    detail: 'Project concatenated heads, add skip connection',
+    values: { attnOut, result: x2 }, color: '#c084fc',
+  });
+
+  const x2_norm = rmsnorm(x2);
+  const mlp1 = linear(x2_norm, W.fc1).map(relu);
+  const mlp2 = linear(mlp1, W.fc2);
+  const x3 = vadd(mlp2, x2);
+  stages.push({
+    name: 'MLP', desc: 'ReLU(fc1\u00B7x) \u2192 fc2 + residual',
+    detail: `Expand ${EMBD}\u2192${4*EMBD}, ReLU, compress back`,
+    values: { hidden: mlp1.slice(0,EMBD), result: x3 }, color: '#f87171',
+  });
+
+  const logits = linear(x3, W.lm_head);
+  const probs = softmax(logits);
+  const indexed = probs.map((p,i) => ({token: itos[i]||'?', prob: p, id: i}));
+  indexed.sort((a,b) => b.prob - a.prob);
+  const top5 = indexed.slice(0, 5);
+  stages.push({
+    name: 'Output', desc: 'lm_head\u00B7x \u2192 softmax \u2192 probabilities',
+    detail: `Predict next token from ${VOCAB} options`,
+    values: { logits: logits.slice(0,10), probs, top5 }, color: '#fbbf24',
+  });
+
+  return stages;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+
+const inputWord = 'emma';
+const inputTokens = [BOS, ...inputWord.split('').map(c => stoi[c])];
+let currentTokenIdx = 0;
+let currentStageIdx = 0;
+let allStages = [];
+let kvCache = { keys: [], values: [] };
+let generated = [];
+let isPlaying = false;
+let playInterval = null;
+
+function resetState() {
+  currentTokenIdx = 0;
+  currentStageIdx = 0;
+  kvCache = { keys: [], values: [] };
+  generated = [];
+  _seed = 42;
+  allStages = forwardPass(inputTokens[0], 0, kvCache);
+  document.getElementById('gen-area').style.display = 'none';
+  renderPanel();
+  renderViz();
+}
+
+function stepForward() {
+  if (currentStageIdx < allStages.length - 1) {
+    currentStageIdx++;
+  } else {
+    currentTokenIdx++;
+    if (currentTokenIdx < inputTokens.length) {
+      currentStageIdx = 0;
+      allStages = forwardPass(inputTokens[currentTokenIdx], currentTokenIdx, kvCache);
+    } else {
+      const lastStage = allStages[allStages.length - 1];
+      const probs = lastStage.values.probs;
+      let r = Math.random(), cum = 0, sampled = 0;
+      for (let i = 0; i < probs.length; i++) {
+        cum += probs[i];
+        if (r < cum) { sampled = i; break; }
+      }
+      if (sampled === BOS || generated.length >= 6) {
+        if (isPlaying) togglePlay();
+        return;
+      }
+      generated.push(itos[sampled]);
+      document.getElementById('gen-area').style.display = 'block';
+      document.getElementById('gen-word').textContent = generated.join('');
+      document.getElementById('gen-info').textContent = `Generated ${generated.length} chars`;
+      currentStageIdx = 0;
+      allStages = forwardPass(sampled, currentTokenIdx, kvCache);
+      currentTokenIdx++;
+    }
+  }
+  renderPanel();
+  renderViz();
+}
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  const btn = document.getElementById('btn-play');
+  if (isPlaying) {
+    btn.classList.add('active');
+    btn.textContent = 'Pause \u23F8';
+    const speed = parseInt(document.getElementById('speed').value);
+    playInterval = setInterval(stepForward, 1000 / speed);
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = 'Auto \u25B6\u25B6';
+    clearInterval(playInterval);
+  }
+}
+
+document.getElementById('btn-step').addEventListener('click', stepForward);
+document.getElementById('btn-play').addEventListener('click', togglePlay);
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (isPlaying) togglePlay();
+  resetState();
+});
+document.getElementById('speed').addEventListener('input', () => {
+  if (isPlaying) {
+    clearInterval(playInterval);
+    const speed = parseInt(document.getElementById('speed').value);
+    playInterval = setInterval(stepForward, 1000 / speed);
+  }
+});
+
+// Theme toggle
+const toggle = document.getElementById('themeToggle');
+toggle.addEventListener('click', () => {
+  document.documentElement.classList.toggle('light');
+  const isLight = document.documentElement.classList.contains('light');
+  toggle.textContent = isLight ? 'dark' : 'light';
+  localStorage.setItem('kiri-theme', isLight ? 'light' : 'dark');
+  renderer.setClearColor(isLight ? 0xf8f8f6 : 0x06070a);
+});
+if (localStorage.getItem('kiri-theme') === 'light') {
+  document.documentElement.classList.add('light');
+  toggle.textContent = 'dark';
+}
+
+// ============================================================
+// PANEL RENDERING
+// ============================================================
+
+function fmt(v) { return typeof v === 'number' ? v.toFixed(3) : v; }
+
+function renderPanel() {
+  const token = currentTokenIdx < inputTokens.length
+    ? inputTokens[currentTokenIdx]
+    : (generated.length > 0 ? stoi[generated[generated.length-1]] : BOS);
+
+  const charName = currentTokenIdx < inputTokens.length
+    ? (currentTokenIdx === 0 ? 'BOS' : inputWord[currentTokenIdx-1])
+    : (generated[generated.length-1] || '?');
+
+  document.getElementById('current-char').textContent = charName;
+  document.getElementById('current-char').style.color = currentTokenIdx >= inputTokens.length ? 'var(--a)' : 'var(--g)';
+  document.getElementById('current-id').textContent = token;
+  document.getElementById('current-pos').textContent = Math.min(currentTokenIdx, BLOCK-1);
+
+  const phase = currentTokenIdx < inputTokens.length ? 'teacher forcing' : 'generating';
+  document.getElementById('panel-sub').textContent = `"${inputWord}" \u2192 ${phase} \u00B7 step ${currentTokenIdx}`;
+
+  const container = document.getElementById('stages');
+  container.innerHTML = '';
+
+  allStages.forEach((stage, idx) => {
+    const el = document.createElement('div');
+    el.className = 'stage' + (idx === currentStageIdx ? ' active' : idx < currentStageIdx ? ' done' : '');
+
+    let bodyHTML = `<div style="color:var(--dim);margin-bottom:4px">${stage.detail}</div>`;
+
+    if (idx <= currentStageIdx) {
+      const v = stage.values;
+
+      if (stage.name === 'Embedding') {
+        bodyHTML += `<div style="color:${stage.color};font-size:9px;margin:4px 0">tok_emb [${EMBD}]:</div>`;
+        bodyHTML += `<div class="vec">${v.tokEmb.map(x=>`<span class="vec-val hot">${fmt(x)}</span>`).join('')}</div>`;
+        bodyHTML += `<div style="color:${stage.color};font-size:9px;margin:4px 0">pos_emb [${EMBD}]:</div>`;
+        bodyHTML += `<div class="vec">${v.posEmb.map(x=>`<span class="vec-val">${fmt(x)}</span>`).join('')}</div>`;
+        bodyHTML += `<div style="color:var(--g);font-size:9px;margin:4px 0">x = tok + pos [${EMBD}]:</div>`;
+        bodyHTML += `<div class="vec">${v.result.map(x=>`<span class="vec-val hot">${fmt(x)}</span>`).join('')}</div>`;
+      }
+      else if (stage.name.includes('RMSNorm')) {
+        bodyHTML += `<div class="vec">${v.result.map(x=>`<span class="vec-val hot">${fmt(x)}</span>`).join('')}</div>`;
+      }
+      else if (stage.name === 'Q, K, V') {
+        ['q','k','v'].forEach(name => {
+          bodyHTML += `<div style="color:${stage.color};font-size:9px;margin:4px 0">${name.toUpperCase()} [${EMBD}]:</div>`;
+          bodyHTML += `<div class="vec">${v[name].map(x=>`<span class="vec-val">${fmt(x)}</span>`).join('')}</div>`;
+        });
+      }
+      else if (stage.name === 'Attention') {
+        v.attnWeights.forEach((weights, h) => {
+          bodyHTML += `<div style="color:${stage.color};font-size:9px;margin:4px 0">Head ${h} attention weights:</div>`;
+          bodyHTML += `<div class="vec">${weights.map((w,t) => {
+            const intensity = w > 0.2 ? ' attn' : '';
+            return `<span class="vec-val${intensity}" title="pos ${t}">${(w*100).toFixed(0)}%</span>`;
+          }).join('')}</div>`;
+        });
+      }
+      else if (stage.name === 'MLP') {
+        bodyHTML += `<div style="color:${stage.color};font-size:9px;margin:4px 0">Hidden (first ${EMBD} of ${4*EMBD}):</div>`;
+        bodyHTML += `<div class="vec">${v.hidden.map(x=>`<span class="vec-val${x>0?' hot':''}">${fmt(x)}</span>`).join('')}</div>`;
+        bodyHTML += `<div style="color:var(--g);font-size:9px;margin:4px 0">Output [${EMBD}]:</div>`;
+        bodyHTML += `<div class="vec">${v.result.map(x=>`<span class="vec-val hot">${fmt(x)}</span>`).join('')}</div>`;
+      }
+      else if (stage.name === 'Output') {
+        bodyHTML += `<div style="font-size:9px;margin:4px 0;color:var(--a)">Top 5 predictions:</div>`;
+        v.top5.forEach(({token, prob}) => {
+          const pct = (prob * 100).toFixed(1);
+          const color = token === 'BOS' ? 'var(--dim)' : 'var(--g)';
+          bodyHTML += `<div class="prob-bar">
+            <span class="lbl" style="color:${color}">${token}</span>
+            <div class="bar"><div class="fill" style="width:${Math.min(prob*300,100)}%;background:${color}"></div></div>
+            <span class="pct" style="color:${color}">${pct}%</span>
+          </div>`;
+        });
+      }
+      else if (v.result) {
+        bodyHTML += `<div class="vec">${v.result.map(x=>`<span class="vec-val hot">${fmt(x)}</span>`).join('')}</div>`;
+      }
+    }
+
+    el.innerHTML = `
+      <div class="stage-head">
+        <span class="stage-name" style="color:${idx<=currentStageIdx?stage.color:'var(--dim)'}">${stage.name}</span>
+        <span class="stage-badge">${idx < currentStageIdx ? '\u2713' : idx === currentStageIdx ? stage.desc.slice(0,20) : '...'}</span>
+      </div>
+      <div class="stage-body">${bodyHTML}</div>
+    `;
+    container.appendChild(el);
+  });
+}
+
+// ============================================================
+// 3D VISUALIZATION (Three.js)
+// ============================================================
+
+const canvas = document.getElementById('viz');
+const vizWrap = document.getElementById('viz-wrap');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+const isLight = document.documentElement.classList.contains('light');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setClearColor(isLight ? 0xf8f8f6 : 0x06070a);
+
+function resizeViz() {
+  const w = vizWrap.clientWidth;
+  const h = vizWrap.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+}
+resizeViz();
+window.addEventListener('resize', resizeViz);
+
+scene.add(new THREE.AmbientLight(0x404060, 0.5));
+const dLight = new THREE.DirectionalLight(0xffffff, 0.7);
+dLight.position.set(3, 5, 4);
+scene.add(dLight);
+
+const stageColors = [0x4ade80, 0x22d3ee, 0xc084fc, 0xc084fc, 0xc084fc, 0xf87171, 0xfbbf24];
+const stageNames = ['Embed', 'Norm', 'QKV', 'Attn', 'Attn+Res', 'MLP', 'Output'];
+const blockMeshes = [];
+
+const S = 0.15;
+const positions = [
+  {x:-4, y:0}, {x:-2.8, y:0}, {x:-1.4, y:0}, {x:0, y:0},
+  {x:1.4, y:0}, {x:2.8, y:0}, {x:4, y:0},
+];
+
+stageNames.forEach((name, i) => {
+  const sizes = [
+    [EMBD, VOCAB*0.3], [EMBD, EMBD*0.5], [EMBD, EMBD],
+    [EMBD, EMBD*0.7], [EMBD, EMBD*0.7], [EMBD*2, EMBD], [VOCAB*0.4, EMBD],
+  ];
+  const [w, h] = sizes[i];
+  const geo = new THREE.BoxGeometry(w*S, h*S, 0.2);
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: stageColors[i], transparent: true, opacity: 0.2,
+    emissive: new THREE.Color(stageColors[i]), emissiveIntensity: 0.05,
+    metalness: 0, roughness: 0.6,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(positions[i].x, positions[i].y, 0);
+  scene.add(mesh);
+  blockMeshes.push(mesh);
+
+  const wire = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: stageColors[i], transparent: true, opacity: 0.2 })
+  );
+  mesh.add(wire);
+
+  const lc = document.createElement('canvas');
+  lc.width = 128; lc.height = 32;
+  const ctx = lc.getContext('2d');
+  ctx.fillStyle = '#' + new THREE.Color(stageColors[i]).getHexString();
+  ctx.font = '500 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(name, 64, 20);
+  const lt = new THREE.CanvasTexture(lc);
+  const ls = new THREE.Sprite(new THREE.SpriteMaterial({ map: lt, transparent: true }));
+  ls.scale.set(1.4, 0.35, 1);
+  ls.position.y = h*S/2 + 0.3;
+  mesh.add(ls);
+});
+
+// Particles
+const PARTICLE_COUNT = 60;
+const pGeo = new THREE.BufferGeometry();
+const pPositions = new Float32Array(PARTICLE_COUNT * 3);
+const pColors = new Float32Array(PARTICLE_COUNT * 3);
+const particleState = [];
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  particleState.push({ active: false, progress: 0, fromStage: 0, speed: 0.02 });
+  pPositions[i*3] = -100; pPositions[i*3+1] = 0; pPositions[i*3+2] = 0;
+  pColors[i*3] = 0.3; pColors[i*3+1] = 0.87; pColors[i*3+2] = 0.5;
+}
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+pGeo.setAttribute('color', new THREE.BufferAttribute(pColors, 3));
+
+const pMat = new THREE.PointsMaterial({
+  size: 0.06, vertexColors: true, transparent: true, opacity: 0.8,
+  blending: THREE.AdditiveBlending,
+});
+scene.add(new THREE.Points(pGeo, pMat));
+
+// Connection lines
+const lineMat = new THREE.LineBasicMaterial({ color: 0x1a1c24, transparent: true, opacity: 0.3 });
+for (let i = 0; i < positions.length - 1; i++) {
+  const pts = [
+    new THREE.Vector3(positions[i].x + 0.4, 0, 0),
+    new THREE.Vector3(positions[i+1].x - 0.4, 0, 0)
+  ];
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
+}
+
+camera.position.set(0, 1.5, 8);
+camera.lookAt(0, 0, 0);
+
+// Mouse orbit
+let camAngle = 0, camY = 1.5, camDist = 8, dragging = false, prevX = 0, prevY = 0;
+canvas.addEventListener('mousedown', e => { dragging = true; prevX = e.clientX; prevY = e.clientY; });
+canvas.addEventListener('mouseup', () => dragging = false);
+canvas.addEventListener('mouseleave', () => dragging = false);
+canvas.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  camAngle += (e.clientX - prevX) * 0.005;
+  camY += (e.clientY - prevY) * 0.01;
+  camY = Math.max(-2, Math.min(5, camY));
+  prevX = e.clientX; prevY = e.clientY;
+});
+canvas.addEventListener('wheel', e => {
+  camDist += e.deltaY * 0.01;
+  camDist = Math.max(4, Math.min(15, camDist));
+  e.preventDefault();
+}, { passive: false });
+
+let lastRenderedStage = -1;
+function spawnParticles(stageIdx) {
+  let spawned = 0;
+  for (let i = 0; i < PARTICLE_COUNT && spawned < 8; i++) {
+    if (!particleState[i].active) {
+      particleState[i].active = true;
+      particleState[i].progress = 0;
+      particleState[i].fromStage = Math.max(0, stageIdx - 1);
+      particleState[i].speed = 0.01 + Math.random() * 0.02;
+      const color = new THREE.Color(stageColors[stageIdx]);
+      pColors[i*3] = color.r; pColors[i*3+1] = color.g; pColors[i*3+2] = color.b;
+      spawned++;
+    }
+  }
+}
+
+function renderViz() {
+  blockMeshes.forEach((mesh, i) => {
+    if (i === currentStageIdx) {
+      mesh.material.opacity = 0.7; mesh.material.emissiveIntensity = 0.2;
+    } else if (i < currentStageIdx) {
+      mesh.material.opacity = 0.35; mesh.material.emissiveIntensity = 0.08;
+    } else {
+      mesh.material.opacity = 0.15; mesh.material.emissiveIntensity = 0.02;
+    }
+  });
+  if (currentStageIdx !== lastRenderedStage) {
+    spawnParticles(currentStageIdx);
+    lastRenderedStage = currentStageIdx;
+  }
+}
+
+let time = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  time += 0.016;
+  camera.position.x = Math.sin(camAngle) * camDist;
+  camera.position.z = Math.cos(camAngle) * camDist;
+  camera.position.y = camY;
+  camera.lookAt(0, 0, 0);
+
+  blockMeshes.forEach((mesh, i) => {
+    mesh.position.y = Math.sin(time * 0.8 + i * 0.7) * 0.03;
+  });
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const p = particleState[i];
+    if (!p.active) { pPositions[i*3] = -100; continue; }
+    p.progress += p.speed;
+    if (p.progress > 1) { p.active = false; pPositions[i*3] = -100; continue; }
+    const from = positions[p.fromStage];
+    const to = positions[Math.min(p.fromStage + 1, positions.length - 1)];
+    pPositions[i*3] = from.x + (to.x - from.x) * p.progress;
+    pPositions[i*3+1] = Math.sin(p.progress * Math.PI) * 0.3 + (Math.random() - 0.5) * 0.05;
+    pPositions[i*3+2] = (Math.random() - 0.5) * 0.2;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+  pGeo.attributes.color.needsUpdate = true;
+  renderer.render(scene, camera);
+}
+
+animate();
+resetState();
+</script>
+</body>
+</html>

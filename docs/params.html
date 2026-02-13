@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIRI — Parameter Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<style>
+:root{
+  --bg:#06070a;--s1:#0c0d12;--s2:#13141a;--bdr:#1a1c24;
+  --tx:#d8d5cf;--dim:#555566;--g:#4ade80;--a:#fbbf24;--r:#f87171;
+  --b:#60a5fa;--p:#c084fc;--c:#22d3ee;
+  --mono:'JetBrains Mono',monospace;--hd:'Fraunces',serif;
+}
+:root.light{
+  --bg:#f8f8f6;--s1:#ffffff;--s2:#f0f0ec;--bdr:#d8d8d0;
+  --tx:#1a1a1a;--dim:#666670;--g:#16a34a;--a:#b45309;--r:#dc2626;
+  --b:#2563eb;--p:#7c3aed;--c:#0891b2;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:var(--mono);font-size:12px;line-height:1.6;overflow:hidden;height:100vh}
+
+.app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+.topbar{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--bdr);background:var(--s1)}
+.topbar a{color:var(--g);text-decoration:none;font-size:11px}
+.topbar a:hover{text-decoration:underline}
+.topbar h1{font-family:var(--hd);font-size:16px;font-weight:400;flex:1}
+.topbar h1 em{color:var(--g);font-style:italic}
+.modes{display:flex;gap:4px}
+.modes button{background:none;border:1px solid var(--bdr);color:var(--dim);font-family:var(--mono);font-size:10px;padding:4px 14px;cursor:pointer;border-radius:3px;transition:all .15s;letter-spacing:.5px}
+.modes button:hover{color:var(--tx);border-color:var(--dim)}
+.modes button.on{background:var(--g);color:var(--bg);border-color:var(--g)}
+.tbtn{background:none;border:1px solid var(--bdr);color:var(--dim);font-family:var(--mono);font-size:10px;padding:4px 12px;cursor:pointer;border-radius:100px;transition:all .15s}
+.tbtn:hover{color:var(--tx);border-color:var(--dim)}
+
+.main{display:grid;grid-template-columns:1fr 300px;overflow:hidden}
+@media(max-width:900px){.main{grid-template-columns:1fr;grid-template-rows:60vh 40vh}}
+.canvas-wrap{position:relative;overflow:hidden}
+canvas{width:100%;height:100%;display:block}
+
+.legend{position:absolute;bottom:16px;left:16px;display:flex;gap:14px;font-size:9px;color:var(--dim);letter-spacing:.5px}
+.lg{display:flex;align-items:center;gap:5px}
+.dot{width:8px;height:8px;border-radius:2px}
+
+.comp-progress{position:absolute;bottom:16px;right:16px;display:flex;gap:8px;align-items:center}
+.comp-progress button{background:var(--s1);border:1px solid var(--bdr);color:var(--tx);font-family:var(--mono);font-size:10px;padding:4px 12px;cursor:pointer;border-radius:3px;transition:all .15s}
+.comp-progress button:hover{border-color:var(--g);color:var(--g)}
+.comp-progress button.on{background:var(--g);color:var(--bg);border-color:var(--g)}
+.step-label{font-size:9px;color:var(--dim);max-width:200px;text-align:right}
+
+.info{background:var(--s1);border-left:1px solid var(--bdr);overflow-y:auto;padding:20px}
+@media(max-width:900px){.info{border-left:none;border-top:1px solid var(--bdr)}}
+.info h3{font-size:11px;color:var(--g);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;font-weight:500}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bdr);border:1px solid var(--bdr);margin-bottom:16px}
+.stat{background:var(--s2);padding:10px;text-align:center}
+.stat .n{font-size:18px;font-weight:700;color:var(--g);font-family:var(--hd)}
+.stat .l{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+
+#detail{margin:16px 0}
+.detail-card{background:var(--s2);border:1px solid var(--bdr);border-radius:3px;padding:14px;margin-bottom:10px}
+.detail-card .dc-name{font-size:14px;font-weight:500;margin-bottom:4px}
+.detail-card .dc-shape{font-size:10px;color:var(--dim)}
+.detail-card .dc-purpose{font-size:10px;color:var(--dim);margin-top:6px;line-height:1.6}
+.detail-card .dc-bar{margin-top:8px}
+.detail-card .dc-bar-track{height:4px;background:var(--bg);border-radius:2px;overflow:hidden}
+.detail-card .dc-bar-fill{height:100%;border-radius:2px}
+.detail-card .dc-bar-label{font-size:9px;color:var(--dim);margin-top:3px;display:flex;justify-content:space-between}
+
+.breakdown{margin-top:12px}
+.bk-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:10px}
+.bk-dot{width:6px;height:6px;border-radius:1px;flex-shrink:0}
+.bk-name{flex:1;color:var(--dim)}
+.bk-val{font-variant-numeric:tabular-nums;color:var(--tx)}
+.bk-pct{width:40px;text-align:right;color:var(--dim);font-size:9px}
+
+.comp-step{background:var(--s2);border:1px solid var(--bdr);border-radius:3px;padding:12px;margin-bottom:8px;transition:all .2s}
+.comp-step.active{border-color:var(--g);background:rgba(74,222,128,0.04)}
+.comp-step .cs-name{font-size:11px;font-weight:500;margin-bottom:2px}
+.comp-step.active .cs-name{color:var(--g)}
+.comp-step .cs-desc{font-size:9px;color:var(--dim);line-height:1.5}
+.comp-step .cs-params{font-size:9px;color:var(--a);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="topbar">
+  <a href="./">&larr; KIRI</a>
+  <h1>Parameter <em>Architecture</em></h1>
+  <div class="modes">
+    <button class="on" id="btn-params">Parameters</button>
+    <button id="btn-compute">Computation</button>
+  </div>
+  <a href="live.html">live pass</a>
+  <button class="tbtn" id="themeToggle">light</button>
+</div>
+
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="c"></canvas>
+    <div class="legend">
+      <span class="lg"><span class="dot" style="background:#4ade80"></span> Embedding</span>
+      <span class="lg"><span class="dot" style="background:#60a5fa"></span> Attention</span>
+      <span class="lg"><span class="dot" style="background:#c084fc"></span> MLP</span>
+      <span class="lg"><span class="dot" style="background:#fbbf24"></span> Output</span>
+    </div>
+    <div class="comp-progress" id="comp-ctrl" style="display:none">
+      <span class="step-label" id="step-label"></span>
+      <button id="btn-prev">&larr;</button>
+      <button id="btn-next">&rarr;</button>
+      <button id="btn-auto">Auto</button>
+    </div>
+  </div>
+
+  <div class="info" id="info">
+    <h3>Pulse Atom</h3>
+    <div class="stat-grid">
+      <div class="stat"><div class="n">27,840</div><div class="l">Params</div></div>
+      <div class="stat"><div class="n">43</div><div class="l">Vocab</div></div>
+      <div class="stat"><div class="n">2</div><div class="l">Layers</div></div>
+    </div>
+
+    <div id="detail">
+      <div class="detail-card">
+        <div class="dc-purpose">Hover or click a parameter block in the 3D view to see its details. Drag to orbit, scroll to zoom.</div>
+      </div>
+    </div>
+
+    <div class="breakdown" id="breakdown">
+      <h3 style="margin-top:0">Parameter Breakdown</h3>
+    </div>
+
+    <div id="comp-steps" style="display:none">
+      <h3 style="margin-top:0">Forward Pass</h3>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ============================================================
+// PULSE ATOM PARAMETER ARCHITECTURE
+// ============================================================
+
+const TOTAL_PARAMS = 27840;
+
+const components = [
+  { id:'wte',    label:'wte',     rows:43,  cols:32,  params:1376, type:'Embedding', color:0x4ade80,
+    purpose:'Token embeddings: maps each of 43 state tokens to a 32-dim vector',
+    x:-1.3, y:0, z:0 },
+  { id:'wpe',    label:'wpe',     rows:16,  cols:32,  params:512,  type:'Embedding', color:0x4ade80,
+    purpose:'Position embeddings: encodes sequence position (0\u201315)',
+    x:1.3, y:0, z:0 },
+
+  { id:'l0.wq',  label:'L0 Wq',  rows:32,  cols:32,  params:1024, type:'Attention', color:0x60a5fa,
+    purpose:'Query projection (Layer 0): "what am I looking for?"',
+    x:-2.4, y:3.5, z:0 },
+  { id:'l0.wk',  label:'L0 Wk',  rows:32,  cols:32,  params:1024, type:'Attention', color:0x60a5fa,
+    purpose:'Key projection (Layer 0): "what do I contain?"',
+    x:-0.8, y:3.5, z:0 },
+  { id:'l0.wv',  label:'L0 Wv',  rows:32,  cols:32,  params:1024, type:'Attention', color:0x60a5fa,
+    purpose:'Value projection (Layer 0): "what information do I carry?"',
+    x:0.8, y:3.5, z:0 },
+  { id:'l0.wo',  label:'L0 Wo',  rows:32,  cols:32,  params:1024, type:'Attention', color:0x60a5fa,
+    purpose:'Output projection (Layer 0): combines 4-head attention outputs',
+    x:2.4, y:3.5, z:0 },
+
+  { id:'l0.f1',  label:'L0 fc1', rows:128, cols:32,  params:4096, type:'MLP',       color:0xc084fc,
+    purpose:'MLP expand (Layer 0): 32 \u2192 128 dims (4\u00D7 expansion), followed by ReLU',
+    x:-1.0, y:6.0, z:0 },
+  { id:'l0.f2',  label:'L0 fc2', rows:32,  cols:128, params:4096, type:'MLP',       color:0xc084fc,
+    purpose:'MLP compress (Layer 0): 128 \u2192 32 dims, projects back to residual stream',
+    x:1.0, y:6.0, z:0 },
+
+  { id:'l1.wq',  label:'L1 Wq',  rows:32,  cols:32,  params:1024, type:'Attention', color:0x60a5fa,
+    purpose:'Query projection (Layer 1)',
+    x:-2.4, y:9.0, z:0 },
+  { id:'l1.wk',  label:'L1 Wk',  rows:32,  cols:32,  params:1024, type:'Attention', color:0x60a5fa,
+    purpose:'Key projection (Layer 1)',
+    x:-0.8, y:9.0, z:0 },
+  { id:'l1.wv',  label:'L1 Wv',  rows:32,  cols:32,  params:1024, type:'Attention', color:0x60a5fa,
+    purpose:'Value projection (Layer 1)',
+    x:0.8, y:9.0, z:0 },
+  { id:'l1.wo',  label:'L1 Wo',  rows:32,  cols:32,  params:1024, type:'Attention', color:0x60a5fa,
+    purpose:'Output projection (Layer 1)',
+    x:2.4, y:9.0, z:0 },
+
+  { id:'l1.f1',  label:'L1 fc1', rows:128, cols:32,  params:4096, type:'MLP',       color:0xc084fc,
+    purpose:'MLP expand (Layer 1): 32 \u2192 128 dims',
+    x:-1.0, y:11.5, z:0 },
+  { id:'l1.f2',  label:'L1 fc2', rows:32,  cols:128, params:4096, type:'MLP',       color:0xc084fc,
+    purpose:'MLP compress (Layer 1): 128 \u2192 32 dims',
+    x:1.0, y:11.5, z:0 },
+
+  { id:'lm_head',label:'lm_head',rows:43,  cols:32,  params:1376, type:'Output',    color:0xfbbf24,
+    purpose:'Output projection: 32-dim \u2192 43 logits (one per token), then softmax for probabilities',
+    x:0, y:14.0, z:0 },
+];
+
+// Computation steps
+const computeSteps = [
+  { name:'Token Embedding',     active:['wte'],                       desc:'Look up token in wte[token_id] \u2192 32-dim vector',          params:1376 },
+  { name:'Position Embedding',  active:['wpe'],                       desc:'Look up position in wpe[pos_id] \u2192 32-dim vector',          params:512  },
+  { name:'Add + RMSNorm',       active:['wte','wpe'],                 desc:'x = tok_emb + pos_emb, then normalize: x / \u221A(mean(x\u00B2))',   params:0    },
+  { name:'L0: Q,K,V Projection',active:['l0.wq','l0.wk','l0.wv'],    desc:'Project x into query, key, value: Q=Wq\u00B7x, K=Wk\u00B7x, V=Wv\u00B7x', params:3072 },
+  { name:'L0: Multi-Head Attn', active:['l0.wq','l0.wk','l0.wv','l0.wo'], desc:'4 heads: softmax(Q\u00B7K\u1D40/\u221A8) \u00B7 V, concat, project through Wo',  params:4096 },
+  { name:'L0: Residual + Norm', active:[],                            desc:'x = attn_out + residual, then RMSNorm',                       params:0    },
+  { name:'L0: MLP Expand',      active:['l0.f1'],                     desc:'h = ReLU(fc1 \u00B7 x): expand 32 \u2192 128 dims',                       params:4096 },
+  { name:'L0: MLP Compress',    active:['l0.f2'],                     desc:'x = fc2 \u00B7 h: compress 128 \u2192 32 dims + residual',                 params:4096 },
+  { name:'L1: Q,K,V Projection',active:['l1.wq','l1.wk','l1.wv'],    desc:'Second layer: Q=Wq\u00B7x, K=Wk\u00B7x, V=Wv\u00B7x',                          params:3072 },
+  { name:'L1: Multi-Head Attn', active:['l1.wq','l1.wk','l1.wv','l1.wo'], desc:'4 heads: softmax(Q\u00B7K\u1D40/\u221A8) \u00B7 V, concat, project through Wo',  params:4096 },
+  { name:'L1: Residual + Norm', active:[],                            desc:'x = attn_out + residual, then RMSNorm',                       params:0    },
+  { name:'L1: MLP Expand',      active:['l1.f1'],                     desc:'h = ReLU(fc1 \u00B7 x): expand 32 \u2192 128 dims',                       params:4096 },
+  { name:'L1: MLP Compress',    active:['l1.f2'],                     desc:'x = fc2 \u00B7 h: compress 128 \u2192 32 dims + residual',                 params:4096 },
+  { name:'Output Projection',   active:['lm_head'],                   desc:'logits = lm_head \u00B7 x \u2192 43 values, softmax \u2192 probabilities',       params:1376 },
+];
+
+// ============================================================
+// THREE.JS SCENE
+// ============================================================
+
+const canvas = document.getElementById('c');
+const wrap = canvas.parentElement;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+const isLightInit = localStorage.getItem('kiri-theme') === 'light';
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setClearColor(isLightInit ? 0xf8f8f6 : 0x06070a);
+if (isLightInit) document.documentElement.classList.add('light');
+
+function resize() {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Lighting
+scene.add(new THREE.AmbientLight(0x606080, 0.6));
+const dl1 = new THREE.DirectionalLight(0xffffff, 0.6);
+dl1.position.set(5, 15, 10);
+scene.add(dl1);
+const dl2 = new THREE.DirectionalLight(0x8888ff, 0.2);
+dl2.position.set(-5, 5, -5);
+scene.add(dl2);
+
+// ============================================================
+// CREATE PARAMETER BLOCKS
+// ============================================================
+
+function dimScale(n) {
+  if (n <= 16) return 0.45;
+  if (n <= 32) return 0.75;
+  if (n <= 48) return 0.95;
+  return 0.95 + Math.log2(n / 48) * 0.55;
+}
+
+const meshes = {};     // id -> mesh
+const meshData = {};   // id -> component data
+const allMeshes = [];  // for raycasting
+
+components.forEach(c => {
+  const w = dimScale(c.cols);
+  const h = dimScale(c.rows);
+  const d = 0.15;
+
+  const geo = new THREE.BoxGeometry(w, h, d);
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: c.color,
+    transparent: true,
+    opacity: 0.55,
+    emissive: new THREE.Color(c.color),
+    emissiveIntensity: 0.04,
+    metalness: 0.1,
+    roughness: 0.5,
+    clearcoat: 0.3,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(c.x, c.y, c.z);
+  scene.add(mesh);
+
+  // Wireframe
+  const wire = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: c.color, transparent: true, opacity: 0.35 })
+  );
+  mesh.add(wire);
+
+  // Label sprite
+  const lc = document.createElement('canvas');
+  lc.width = 256; lc.height = 48;
+  const ctx = lc.getContext('2d');
+  ctx.fillStyle = '#' + new THREE.Color(c.color).getHexString();
+  ctx.font = '500 22px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(c.label, 128, 28);
+  ctx.font = '16px monospace';
+  ctx.globalAlpha = 0.5;
+  ctx.fillText(`${c.rows}\u00D7${c.cols}`, 128, 46);
+  const lt = new THREE.CanvasTexture(lc);
+  const ls = new THREE.Sprite(new THREE.SpriteMaterial({ map: lt, transparent: true }));
+  ls.scale.set(1.8, 0.34, 1);
+  ls.position.y = h / 2 + 0.25;
+  mesh.add(ls);
+
+  meshes[c.id] = mesh;
+  meshData[c.id] = c;
+  allMeshes.push(mesh);
+  mesh.userData = { componentId: c.id };
+});
+
+// ============================================================
+// CONNECTION LINES (data flow arrows)
+// ============================================================
+
+const flowConnections = [
+  ['wte', 'l0.wq'], ['wpe', 'l0.wq'],
+  ['l0.wq', 'l0.wo'], ['l0.wk', 'l0.wo'], ['l0.wv', 'l0.wo'],
+  ['l0.wo', 'l0.f1'], ['l0.f1', 'l0.f2'],
+  ['l0.f2', 'l1.wq'],
+  ['l1.wq', 'l1.wo'], ['l1.wk', 'l1.wo'], ['l1.wv', 'l1.wo'],
+  ['l1.wo', 'l1.f1'], ['l1.f1', 'l1.f2'],
+  ['l1.f2', 'lm_head'],
+];
+
+const connLineMat = new THREE.LineBasicMaterial({ color: 0x333344, transparent: true, opacity: 0.25 });
+flowConnections.forEach(([fromId, toId]) => {
+  const from = components.find(c => c.id === fromId);
+  const to = components.find(c => c.id === toId);
+  if (!from || !to) return;
+  const pts = [
+    new THREE.Vector3(from.x, from.y + dimScale(from.rows) / 2 + 0.05, from.z),
+    new THREE.Vector3(to.x, to.y - dimScale(to.rows) / 2 - 0.05, to.z),
+  ];
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), connLineMat));
+});
+
+// Layer labels
+function addLayerLabel(text, y, x) {
+  const lc = document.createElement('canvas');
+  lc.width = 256; lc.height = 32;
+  const ctx = lc.getContext('2d');
+  ctx.fillStyle = '#555566';
+  ctx.font = '400 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, 128, 20);
+  const lt = new THREE.CanvasTexture(lc);
+  const ls = new THREE.Sprite(new THREE.SpriteMaterial({ map: lt, transparent: true }));
+  ls.scale.set(2.5, 0.3, 1);
+  ls.position.set(x || -4.2, y, 0);
+  scene.add(ls);
+}
+addLayerLabel('EMBEDDINGS', 0);
+addLayerLabel('LAYER 0 ATTENTION', 3.5);
+addLayerLabel('LAYER 0 MLP', 6.0);
+addLayerLabel('LAYER 1 ATTENTION', 9.0);
+addLayerLabel('LAYER 1 MLP', 11.5);
+addLayerLabel('OUTPUT', 14.0);
+
+// ============================================================
+// PARTICLES FOR COMPUTATION MODE
+// ============================================================
+
+const PCOUNT = 120;
+const pGeo = new THREE.BufferGeometry();
+const pPos = new Float32Array(PCOUNT * 3);
+const pCol = new Float32Array(PCOUNT * 3);
+const pState = [];
+for (let i = 0; i < PCOUNT; i++) {
+  pState.push({ active: false, progress: 0, from: null, to: null, speed: 0.008, color: new THREE.Color(0x4ade80) });
+  pPos[i*3] = -200; pPos[i*3+1] = 0; pPos[i*3+2] = 0;
+  pCol[i*3] = 0.29; pCol[i*3+1] = 0.87; pCol[i*3+2] = 0.5;
+}
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+const pMat = new THREE.PointsMaterial({
+  size: 0.08, vertexColors: true, transparent: true, opacity: 0.9,
+  blending: THREE.AdditiveBlending,
+});
+const points = new THREE.Points(pGeo, pMat);
+scene.add(points);
+
+function spawnFlowParticles(fromIds, toIds) {
+  let spawned = 0;
+  const maxSpawn = 15;
+  for (let i = 0; i < PCOUNT && spawned < maxSpawn; i++) {
+    if (!pState[i].active) {
+      const fromId = fromIds[spawned % fromIds.length];
+      const toId = toIds[spawned % toIds.length];
+      const fromC = components.find(c => c.id === fromId);
+      const toC = components.find(c => c.id === toId);
+      if (!fromC || !toC) continue;
+      pState[i].active = true;
+      pState[i].progress = 0;
+      pState[i].from = new THREE.Vector3(fromC.x + (Math.random()-0.5)*0.3, fromC.y, fromC.z);
+      pState[i].to = new THREE.Vector3(toC.x + (Math.random()-0.5)*0.3, toC.y, toC.z);
+      pState[i].speed = 0.006 + Math.random() * 0.008;
+      pState[i].color.setHex(toC.color);
+      pCol[i*3] = pState[i].color.r;
+      pCol[i*3+1] = pState[i].color.g;
+      pCol[i*3+2] = pState[i].color.b;
+      spawned++;
+    }
+  }
+}
+
+// ============================================================
+// CAMERA CONTROLS (manual orbit)
+// ============================================================
+
+let camTheta = 0.3, camPhi = 1.2, camDist = 22, camTarget = new THREE.Vector3(0, 7, 0);
+let dragging = false, prevMX = 0, prevMY = 0;
+
+canvas.addEventListener('mousedown', e => { dragging = true; prevMX = e.clientX; prevMY = e.clientY; });
+window.addEventListener('mouseup', () => dragging = false);
+canvas.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  camTheta -= (e.clientX - prevMX) * 0.005;
+  camPhi -= (e.clientY - prevMY) * 0.005;
+  camPhi = Math.max(0.2, Math.min(Math.PI - 0.2, camPhi));
+  prevMX = e.clientX; prevMY = e.clientY;
+});
+canvas.addEventListener('wheel', e => {
+  camDist *= 1 + e.deltaY * 0.001;
+  camDist = Math.max(8, Math.min(50, camDist));
+  e.preventDefault();
+}, { passive: false });
+
+// Touch support
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) { dragging = true; prevMX = e.touches[0].clientX; prevMY = e.touches[0].clientY; }
+}, { passive: true });
+canvas.addEventListener('touchend', () => dragging = false);
+canvas.addEventListener('touchmove', e => {
+  if (!dragging || e.touches.length !== 1) return;
+  camTheta -= (e.touches[0].clientX - prevMX) * 0.005;
+  camPhi -= (e.touches[0].clientY - prevMY) * 0.005;
+  camPhi = Math.max(0.2, Math.min(Math.PI - 0.2, camPhi));
+  prevMX = e.touches[0].clientX; prevMY = e.touches[0].clientY;
+}, { passive: true });
+
+// ============================================================
+// RAYCASTING (hover / click)
+// ============================================================
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let hoveredId = null;
+let selectedId = null;
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+});
+
+canvas.addEventListener('click', () => {
+  if (hoveredId) {
+    selectedId = hoveredId;
+    showDetail(selectedId);
+  }
+});
+
+function updateHover() {
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(allMeshes);
+  const newHover = hits.length > 0 ? hits[0].object.userData.componentId : null;
+  if (newHover !== hoveredId) {
+    hoveredId = newHover;
+    canvas.style.cursor = hoveredId ? 'pointer' : 'grab';
+    if (hoveredId && !selectedId) showDetail(hoveredId);
+  }
+}
+
+// ============================================================
+// INFO PANEL
+// ============================================================
+
+function showDetail(id) {
+  const c = meshData[id];
+  if (!c) return;
+  const pct = ((c.params / TOTAL_PARAMS) * 100).toFixed(1);
+  const colorHex = '#' + new THREE.Color(c.color).getHexString();
+
+  document.getElementById('detail').innerHTML = `
+    <div class="detail-card">
+      <div class="dc-name" style="color:${colorHex}">${c.id}</div>
+      <div class="dc-shape">${c.rows} \u00D7 ${c.cols} = ${c.params.toLocaleString()} parameters</div>
+      <div class="dc-purpose">${c.purpose}</div>
+      <div class="dc-bar">
+        <div class="dc-bar-track"><div class="dc-bar-fill" style="width:${pct}%;background:${colorHex}"></div></div>
+        <div class="dc-bar-label"><span>${c.type}</span><span>${pct}% of total</span></div>
+      </div>
+    </div>
+  `;
+}
+
+// Breakdown panel
+function renderBreakdown() {
+  const groups = {};
+  components.forEach(c => {
+    if (!groups[c.type]) groups[c.type] = { params: 0, color: c.color, count: 0 };
+    groups[c.type].params += c.params;
+    groups[c.type].count++;
+  });
+
+  const el = document.getElementById('breakdown');
+  let html = '<h3 style="margin-top:0">Parameter Breakdown</h3>';
+  Object.entries(groups).forEach(([type, g]) => {
+    const pct = ((g.params / TOTAL_PARAMS) * 100).toFixed(1);
+    const colorHex = '#' + new THREE.Color(g.color).getHexString();
+    html += `<div class="bk-row">
+      <span class="bk-dot" style="background:${colorHex}"></span>
+      <span class="bk-name">${type} (${g.count})</span>
+      <span class="bk-val">${g.params.toLocaleString()}</span>
+      <span class="bk-pct">${pct}%</span>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+renderBreakdown();
+
+// ============================================================
+// MODE SWITCHING
+// ============================================================
+
+let mode = 'params'; // 'params' or 'compute'
+let compStep = 0;
+let compPlaying = false;
+let compInterval = null;
+
+document.getElementById('btn-params').addEventListener('click', () => setMode('params'));
+document.getElementById('btn-compute').addEventListener('click', () => setMode('compute'));
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-params').classList.toggle('on', m === 'params');
+  document.getElementById('btn-compute').classList.toggle('on', m === 'compute');
+  document.getElementById('comp-ctrl').style.display = m === 'compute' ? 'flex' : 'none';
+  document.getElementById('breakdown').style.display = m === 'params' ? 'block' : 'none';
+  document.getElementById('comp-steps').style.display = m === 'compute' ? 'block' : 'none';
+
+  if (m === 'compute') {
+    compStep = 0;
+    selectedId = null;
+    renderCompSteps();
+    applyCompStep();
+  } else {
+    if (compPlaying) toggleCompPlay();
+    resetBlockAppearance();
+    document.getElementById('detail').innerHTML = `
+      <div class="detail-card">
+        <div class="dc-purpose">Hover or click a parameter block to see its details.</div>
+      </div>`;
+  }
+}
+
+function resetBlockAppearance() {
+  components.forEach(c => {
+    const mesh = meshes[c.id];
+    mesh.material.opacity = 0.55;
+    mesh.material.emissiveIntensity = 0.04;
+  });
+}
+
+function applyCompStep() {
+  const step = computeSteps[compStep];
+  const activeSet = new Set(step.active);
+
+  components.forEach(c => {
+    const mesh = meshes[c.id];
+    if (activeSet.has(c.id)) {
+      mesh.material.opacity = 0.85;
+      mesh.material.emissiveIntensity = 0.25;
+    } else {
+      mesh.material.opacity = 0.15;
+      mesh.material.emissiveIntensity = 0.01;
+    }
+  });
+
+  document.getElementById('step-label').textContent = `${compStep + 1}/${computeSteps.length}: ${step.name}`;
+
+  // Spawn particles between previous and current active blocks
+  if (compStep > 0) {
+    const prevActive = computeSteps[compStep - 1].active;
+    if (prevActive.length > 0 && step.active.length > 0) {
+      spawnFlowParticles(prevActive, step.active);
+    }
+  }
+
+  // Detail panel shows step info
+  const paramStr = step.params > 0 ? `${step.params.toLocaleString()} parameters involved` : 'No learned parameters (pure computation)';
+  document.getElementById('detail').innerHTML = `
+    <div class="detail-card">
+      <div class="dc-name" style="color:var(--g)">${step.name}</div>
+      <div class="dc-purpose">${step.desc}</div>
+      <div class="dc-shape" style="margin-top:6px">${paramStr}</div>
+      <div class="dc-bar">
+        <div class="dc-bar-track"><div class="dc-bar-fill" style="width:${(compStep+1)/computeSteps.length*100}%;background:var(--g)"></div></div>
+        <div class="dc-bar-label"><span>Step ${compStep+1}</span><span>${computeSteps.length} total</span></div>
+      </div>
+    </div>`;
+
+  renderCompSteps();
+}
+
+function renderCompSteps() {
+  const el = document.getElementById('comp-steps');
+  let html = '<h3 style="margin-top:0">Forward Pass</h3>';
+  computeSteps.forEach((s, i) => {
+    const cls = i === compStep ? 'comp-step active' : 'comp-step';
+    const paramStr = s.params > 0 ? `${s.params.toLocaleString()} params` : '';
+    html += `<div class="${cls}" data-step="${i}">
+      <div class="cs-name">${s.name}</div>
+      <div class="cs-desc">${s.desc}</div>
+      ${paramStr ? `<div class="cs-params">${paramStr}</div>` : ''}
+    </div>`;
+  });
+  el.innerHTML = html;
+
+  // Click to jump to step
+  el.querySelectorAll('.comp-step').forEach(el => {
+    el.addEventListener('click', () => {
+      compStep = parseInt(el.dataset.step);
+      applyCompStep();
+    });
+  });
+
+  // Scroll active step into view
+  const activeEl = el.querySelector('.comp-step.active');
+  if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function compNext() {
+  compStep = (compStep + 1) % computeSteps.length;
+  applyCompStep();
+}
+
+function compPrev() {
+  compStep = (compStep - 1 + computeSteps.length) % computeSteps.length;
+  applyCompStep();
+}
+
+function toggleCompPlay() {
+  compPlaying = !compPlaying;
+  const btn = document.getElementById('btn-auto');
+  if (compPlaying) {
+    btn.classList.add('on');
+    btn.textContent = 'Pause';
+    compInterval = setInterval(compNext, 2000);
+  } else {
+    btn.classList.remove('on');
+    btn.textContent = 'Auto';
+    clearInterval(compInterval);
+  }
+}
+
+document.getElementById('btn-next').addEventListener('click', compNext);
+document.getElementById('btn-prev').addEventListener('click', compPrev);
+document.getElementById('btn-auto').addEventListener('click', toggleCompPlay);
+
+// ============================================================
+// THEME TOGGLE
+// ============================================================
+
+const themeBtn = document.getElementById('themeToggle');
+if (isLightInit) themeBtn.textContent = 'dark';
+themeBtn.addEventListener('click', () => {
+  document.documentElement.classList.toggle('light');
+  const isLight = document.documentElement.classList.contains('light');
+  themeBtn.textContent = isLight ? 'dark' : 'light';
+  localStorage.setItem('kiri-theme', isLight ? 'light' : 'dark');
+  renderer.setClearColor(isLight ? 0xf8f8f6 : 0x06070a);
+});
+
+// ============================================================
+// ANIMATION LOOP
+// ============================================================
+
+let time = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  time += 0.016;
+
+  // Camera
+  camera.position.x = camTarget.x + camDist * Math.sin(camPhi) * Math.sin(camTheta);
+  camera.position.y = camTarget.y + camDist * Math.cos(camPhi);
+  camera.position.z = camTarget.z + camDist * Math.sin(camPhi) * Math.cos(camTheta);
+  camera.lookAt(camTarget);
+
+  // Gentle float
+  components.forEach((c, i) => {
+    meshes[c.id].position.y = c.y + Math.sin(time * 0.6 + i * 0.4) * 0.03;
+  });
+
+  // Particles
+  for (let i = 0; i < PCOUNT; i++) {
+    const p = pState[i];
+    if (!p.active) { pPos[i*3] = -200; continue; }
+    p.progress += p.speed;
+    if (p.progress > 1) { p.active = false; pPos[i*3] = -200; continue; }
+    const t = p.progress;
+    const ease = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2; // ease in-out
+    pPos[i*3]   = p.from.x + (p.to.x - p.from.x) * ease + Math.sin(t * Math.PI * 3) * 0.15;
+    pPos[i*3+1] = p.from.y + (p.to.y - p.from.y) * ease;
+    pPos[i*3+2] = p.from.z + (p.to.z - p.from.z) * ease + Math.cos(t * Math.PI * 2) * 0.15;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+  pGeo.attributes.color.needsUpdate = true;
+
+  // Hover highlight (params mode only)
+  if (mode === 'params') {
+    updateHover();
+    components.forEach(c => {
+      const mesh = meshes[c.id];
+      const isHovered = c.id === hoveredId;
+      const isSelected = c.id === selectedId;
+      if (isSelected) {
+        mesh.material.opacity = 0.85;
+        mesh.material.emissiveIntensity = 0.2;
+      } else if (isHovered) {
+        mesh.material.opacity = 0.75;
+        mesh.material.emissiveIntensity = 0.15;
+      } else {
+        mesh.material.opacity = 0.55;
+        mesh.material.emissiveIntensity = 0.04;
+      }
+    });
+  }
+
+  renderer.render(scene, camera);
+}
+
+animate();
+</script>
+</body>
+</html>
