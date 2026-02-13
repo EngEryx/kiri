@@ -12,6 +12,13 @@
   --b:#60a5fa;--p:#c084fc;--c:#22d3ee;
   --mono:'JetBrains Mono',monospace;--hd:'Fraunces',serif;
 }
+:root.light {
+  --bg:#f8f8f6;--s1:#ffffff;--s2:#f0f0ec;--bdr:#d8d8d0;
+  --tx:#1a1a1a;--dim:#666670;--g:#16a34a;--a:#b45309;--r:#dc2626;
+  --b:#2563eb;--p:#7c3aed;--c:#0891b2;
+}
+:root.light .code{background:#f0f0ec}
+:root.light .hero::before{background:radial-gradient(ellipse,rgba(22,163,74,0.06)0%,transparent 60%)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--tx);font-family:var(--mono);font-size:13px;line-height:1.75}
 .w{max-width:880px;margin:0 auto;padding:48px 24px 120px}
@@ -31,10 +38,12 @@ a{color:var(--g);text-decoration:none}
 a:hover{text-decoration:underline}
 
 /* Nav */
-.nav{display:flex;gap:0;border-bottom:1px solid var(--bdr);margin-bottom:36px;overflow-x:auto;position:sticky;top:0;background:var(--bg);z-index:10;padding-top:8px}
+.nav{display:flex;gap:0;border-bottom:1px solid var(--bdr);margin-bottom:36px;overflow-x:auto;position:sticky;top:0;background:var(--bg);z-index:10;padding-top:8px;align-items:center}
 .nav button{background:none;border:none;color:var(--dim);font-family:var(--mono);font-size:11px;padding:10px 16px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.5px}
 .nav button:hover{color:var(--tx)}
 .nav button.on{color:var(--g);border-bottom-color:var(--g)}
+.theme-toggle{margin-left:auto;background:none;border:1px solid var(--bdr);color:var(--dim);font-family:var(--mono);font-size:11px;padding:5px 12px;cursor:pointer;border-radius:100px;transition:all .2s;flex-shrink:0;border-bottom:none}
+.theme-toggle:hover{color:var(--tx);border-color:var(--dim)}
 
 .sec{display:none}
 .sec.on{display:block;animation:fi .25s ease}
@@ -98,6 +107,7 @@ td{padding:7px 10px;border-bottom:1px solid var(--bdr)}
   <button data-s="results">Real Results</button>
   <button data-s="limits">Limits</button>
   <button data-s="road">What's Next</button>
+  <button class="theme-toggle" id="themeToggle">light</button>
 </div>
 
 <!-- ===== MICROGPT EXPLAINED ===== -->
@@ -507,13 +517,24 @@ Built on <a href="https://gist.github.com/karpathy/8627fe009c40f57531cb18360106c
 
 <script>
 document.getElementById('nav').addEventListener('click',e=>{
-if(e.target.tagName!=='BUTTON')return;
-document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));
+if(e.target.tagName!=='BUTTON'||e.target.id==='themeToggle')return;
+document.querySelectorAll('.nav button:not(.theme-toggle)').forEach(b=>b.classList.remove('on'));
 document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
 e.target.classList.add('on');
 document.getElementById(e.target.dataset.s).classList.add('on');
 window.scrollTo({top:document.getElementById('nav').offsetTop-20,behavior:'smooth'});
 });
+const toggle=document.getElementById('themeToggle');
+toggle.addEventListener('click',()=>{
+document.documentElement.classList.toggle('light');
+const isLight=document.documentElement.classList.contains('light');
+toggle.textContent=isLight?'dark':'light';
+localStorage.setItem('kiri-theme',isLight?'light':'dark');
+});
+if(localStorage.getItem('kiri-theme')==='light'){
+document.documentElement.classList.add('light');
+toggle.textContent='dark';
+}
 </script>
 </body>
 </html>

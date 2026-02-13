@@ -4,6 +4,8 @@ Intelligent Runtime Inspector. Composable tiny transformers trained on quantized
 
 Pure Python 3. Zero dependencies. 27,840 parameters. Runs on a Mac Mini forever.
 
+**[Read the full explainer](https://engeryx.github.io/kiri/)**
+
 Built on [Karpathy's microgpt.py](https://github.com/karpathy/microgpt) (Feb 2026) — 199 lines, 160 lines of code, 4,224 default params. KIRI replaces English tokens with **state tokens**: CPU buckets, memory buckets, load averages, disk usage. The model learns what's normal and flags what isn't.
 
 ## Quick Start
