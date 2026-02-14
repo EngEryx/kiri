@@ -28,6 +28,12 @@ from kiri.atoms.pulse import config as _pcfg
 from kiri.atoms.rhythm import config as _rcfg
 from kiri.core import Atom, StateLanguage
 
+try:
+    from kiri.core.molecule import Molecule, MoleculeLanguage
+    _HAS_MOLECULE = True
+except ImportError:
+    _HAS_MOLECULE = False
+
 _DATA = _PKG / 'data'
 _PW = _PKG / 'atoms' / 'pulse' / 'weights'
 _RW = _PKG / 'atoms' / 'rhythm' / 'weights'
@@ -147,7 +153,14 @@ class KiriState:
         self._stop = threading.Event()
         self._thread = None
 
+        self.molecule = None
+        self.molecule_lang = None
+        self.molecule_obs_since_retrain = 0
+        self.molecule_last_retrained = None
+        self._retraining_molecule = False
+
         self._load_models()
+        self._load_molecule()
         self._count_obs()
 
     def _load_models(self):
@@ -170,6 +183,24 @@ class KiriState:
                 print(f"  {name}: loaded ({atom.num_params:,} params)")
             else:
                 print(f"  {name}: no weights")
+
+    def _load_molecule(self):
+        if not _HAS_MOLECULE:
+            print("  molecule: torch not available")
+            return
+        mol_dir = _PKG / 'atoms' / 'molecule' / 'weights'
+        lp = mol_dir / 'molecule_lang.json'
+        wp = mol_dir / 'molecule_weights.pt'
+        if lp.exists() and wp.exists():
+            try:
+                self.molecule_lang = MoleculeLanguage.load(str(lp))
+                self.molecule = Molecule(self.molecule_lang)
+                self.molecule.load_weights(str(wp))
+                print(f"  molecule: loaded ({self.molecule.num_params:,} params)")
+            except Exception as e:
+                print(f"  molecule: load error ({e})")
+        else:
+            print("  molecule: no weights")
 
     def _count_obs(self):
         n = 0
@@ -198,6 +229,32 @@ class KiriState:
 
     # --- API methods ---
 
+    def _molecule_predict(self, p_obs, r_obs, ps, rs):
+        """Run molecule predict_action + explain on current observations."""
+        if self.molecule is None or self.molecule_lang is None:
+            return None
+        try:
+            now = datetime.now()
+            mol_obs = {}
+            if p_obs:
+                mol_obs.update({f'p.{k}': v for k, v in p_obs.items() if k != 'ts'})
+            if r_obs:
+                mol_obs.update({f'r.{k}': v for k, v in r_obs.items() if k != 'ts'})
+            mol_obs.update({'PS': ps, 'RS': rs, 'DS': 0.0})
+            mol_obs.update({'H': now.hour, 'W': now.weekday()})
+            tokens = self.molecule_lang.encode_observation(mol_obs)
+            action, probs = self.molecule.predict_action(tokens)
+            explanation = self.molecule.explain(tokens, action=action)
+            return {
+                'action': action,
+                'explanation': explanation,
+                'action_probs': {n.replace('A:', ''): round(p, 4) for n, p in probs[:4]},
+                'available': True,
+                'retraining': self._retraining_molecule,
+            }
+        except Exception:
+            return None
+
     def status(self):
         now = time.time()
         if self._cache and now - self._cache_t < 1.5:
@@ -217,6 +274,10 @@ class KiriState:
         else:
             rs, rpt, rv, rtk = 0, {}, 'error', ''
 
+        mol = self._molecule_predict(p_obs, r_obs, ps, rs)
+        if mol is None:
+            mol = {'available': False, 'reason': 'no weights' if _HAS_MOLECULE else 'torch not installed'}
+
         result = {
             'timestamp': datetime.now().isoformat(),
             'pulse': {
@@ -227,6 +288,7 @@ class KiriState:
                 'metrics': _clean(r_obs), 'tokens': rtk,
                 'score': rs, 'per_token': rpt, 'verdict': rv,
             },
+            'molecule': mol,
             'stats': {
                 'total_observations': self.total_obs,
                 'total_anomalies': self.total_anomalies,
@@ -234,6 +296,10 @@ class KiriState:
                 'last_trained': self.last_trained,
                 'pulse_params': self.pulse_params,
                 'rhythm_params': self.rhythm_params,
+                'molecule_params': self.molecule.num_params if self.molecule else 0,
+                'molecule_device': str(self.molecule.device) if self.molecule else None,
+                'molecule_obs_since_retrain': self.molecule_obs_since_retrain,
+                'molecule_last_retrained': self.molecule_last_retrained,
             },
         }
         self._cache = result
@@ -284,17 +350,56 @@ class KiriState:
             with self.lock:
                 self.total_obs += 1
         pr = rr = None
+        ps = rs = 0.0
         if p_obs:
             s, pt, v, tk = self._score_one('pulse', p_obs)
+            ps = s
             pr = {'metrics': _clean(p_obs), 'tokens': tk, 'score': s,
                   'verdict': v, 'timestamp': p_obs.get('ts', '')}
         if r_obs:
             s, pt, v, tk = self._score_one('rhythm', r_obs)
+            rs = s
             rr = {'metrics': _clean(r_obs), 'tokens': tk, 'score': s,
                   'verdict': v, 'timestamp': r_obs.get('ts', '')}
+
+        # Log molecule observation for future retraining
+        if self.molecule_lang is not None and (p_obs or r_obs):
+            try:
+                now = datetime.now()
+                mol_obs = {
+                    'pulse': _clean(p_obs) if p_obs else {},
+                    'rhythm': _clean(r_obs) if r_obs else {},
+                    'drift': {},
+                    'scores': {'PS': ps, 'RS': rs, 'DS': 0.0},
+                    'temporal': {'H': now.hour, 'W': now.weekday()},
+                    'ts': now.isoformat(),
+                }
+                mol_result = self._molecule_predict(p_obs, r_obs, ps, rs)
+                if mol_result and mol_result.get('available'):
+                    mol_obs['action'] = mol_result['action']
+                    mol_obs['explanation'] = mol_result['explanation'].split()
+                else:
+                    mol_obs['action'] = 'ok'
+                    mol_obs['explanation'] = ['normal', 'stable']
+                # Prefix keys for molecule format
+                mol_obs['pulse'] = {f'p.{k}': v for k, v in (p_obs or {}).items() if k != 'ts'}
+                mol_obs['rhythm'] = {f'r.{k}': v for k, v in (r_obs or {}).items() if k != 'ts'}
+                day = now.strftime('%Y-%m-%d')
+                path = _DATA / f'molecule_{day}.jsonl'
+                with open(path, 'a') as f:
+                    f.write(json.dumps(mol_obs) + '\n')
+                with self.lock:
+                    self.molecule_obs_since_retrain += 1
+                    self.total_obs += 1
+            except Exception:
+                pass
+
         return {'pulse': pr, 'rhythm': rr}
 
     def train_atom(self, name, steps, cb):
+        if name == 'molecule':
+            self._train_molecule(steps, cb)
+            return
         if name not in ('pulse', 'rhythm'):
             cb(error=f'unknown atom: {name}')
             return
@@ -368,13 +473,139 @@ class KiriState:
 
         cb(done=True, final_loss=loss, total_steps=steps)
 
+    def molecule_status(self):
+        if self.molecule is None:
+            return {'available': False, 'reason': 'no weights' if _HAS_MOLECULE else 'torch not installed'}
+        return {
+            'available': True,
+            'params': self.molecule.num_params,
+            'vocab_size': self.molecule_lang.vocab_size,
+            'n_experts': self.molecule.n_experts,
+            'top_k': self.molecule.top_k,
+            'device': str(self.molecule.device),
+        }
+
+    def molecule_explain(self, data):
+        if self.molecule is None:
+            return {'error': 'molecule not loaded'}
+        mol_obs = {}
+        # Map incoming domain data to prefixed keys
+        for prefix, values in [('p.', data.get('pulse', {})),
+                                ('r.', data.get('rhythm', {})),
+                                ('d.', data.get('drift', {}))]:
+            for k, v in values.items():
+                mol_obs[f'{prefix}{k}'] = v
+        # Direct score/temporal keys
+        for k in ('PS', 'RS', 'DS', 'H', 'W'):
+            if k in data:
+                mol_obs[k] = data[k]
+        if not mol_obs:
+            return {'error': 'no observation data provided'}
+        tokens = self.molecule_lang.encode_observation(mol_obs)
+        action, probs = self.molecule.predict_action(tokens)
+        explanation = self.molecule.explain(tokens, action=action)
+        return {
+            'action': action,
+            'explanation': explanation,
+            'action_probs': {name.replace('A:', ''): round(p, 4) for name, p in probs[:4]},
+        }
+
+    def _train_molecule(self, steps, cb):
+        """Train molecule via streaming callback (same pattern as pulse/rhythm)."""
+        if not _HAS_MOLECULE:
+            cb(error='torch not installed')
+            return
+        from kiri.atoms.molecule.train import make_molecule_language, build_sequences
+        from kiri.atoms.molecule.config import N_EMBD, N_HEAD, N_LAYER, BLOCK_SIZE, N_EXPERTS, TOP_K, FFN_DIM
+        import random
+
+        files = sorted(_glob.glob(str(_DATA / 'molecule_*.jsonl')))
+        observations = []
+        for f in files:
+            with open(f) as fh:
+                for line in fh:
+                    line = line.strip()
+                    if line:
+                        observations.append(json.loads(line))
+        if not observations:
+            cb(error='no molecule data')
+            return
+
+        lang = make_molecule_language()
+        sequences = build_sequences(observations, lang)
+        if not sequences:
+            cb(error=f'not enough molecule data ({len(observations)} obs)')
+            return
+        random.shuffle(sequences)
+
+        mol_dir = _PKG / 'atoms' / 'molecule' / 'weights'
+        wp = mol_dir / 'molecule_weights.pt'
+
+        # Backup current weights
+        if wp.exists():
+            import shutil
+            shutil.copy2(str(wp), str(wp) + '.bak')
+
+        model = Molecule(lang, n_embd=N_EMBD, n_head=N_HEAD, n_layer=N_LAYER,
+                         block_size=BLOCK_SIZE, n_experts=N_EXPERTS, top_k=TOP_K,
+                         ffn_dim=FFN_DIM)
+        if wp.exists():
+            try:
+                model.load_weights(str(wp))
+            except Exception:
+                pass
+
+        cb(info=f'{len(sequences)} sequences, {model.num_params:,} params, {len(observations)} obs')
+
+        batch_size = 32
+        loss = 0.0
+        for step in range(steps):
+            batch = [sequences[random.randint(0, len(sequences) - 1)] for _ in range(batch_size)]
+            lr = 0.01 * max(0.1, 1 - step / max(steps, 1))
+            if hasattr(model, '_optimizer'):
+                for pg in model._optimizer.param_groups:
+                    pg['lr'] = lr
+            loss = model.train_step(batch, lr=lr)
+            cb(step=step + 1, loss=loss, lr=lr, steps=steps)
+
+        mol_dir.mkdir(parents=True, exist_ok=True)
+        model.save(str(wp))
+        lang.save(str(mol_dir / 'molecule_lang.json'))
+
+        with self.lock:
+            self.molecule = model
+            self.molecule_lang = lang
+            self.molecule_last_retrained = datetime.now().isoformat()
+            self.molecule_obs_since_retrain = 0
+            self._cache = None
+
+        cb(done=True, final_loss=loss, total_steps=steps)
+
+    def molecule_retrain(self, steps=500):
+        """Background molecule retrain (called by auto-retrain thread)."""
+        if not _HAS_MOLECULE or self._retraining_molecule:
+            return
+        self._retraining_molecule = True
+        try:
+            def cb(**kw):
+                if kw.get('info'):
+                    print(f"  molecule retrain: {kw['info']}")
+                elif kw.get('done'):
+                    print(f"  molecule retrain: done, loss {kw['final_loss']:.4f}")
+                elif kw.get('error'):
+                    print(f"  molecule retrain error: {kw['error']}")
+            self._train_molecule(steps, cb)
+        except Exception as e:
+            print(f"  molecule retrain failed: {e}")
+        finally:
+            self._retraining_molecule = False
+
     def start_collection(self, interval):
         if self._thread and self._thread.is_alive():
             return
         self._stop.clear()
 
         def run():
-            print(f"  collecting every {interval}s")
             while not self._stop.is_set():
                 try:
                     self.collect_once()
@@ -419,11 +650,26 @@ class KiriHandler(http.server.BaseHTTPRequestHandler):
         self._cors()
         self.end_headers()
 
+    def _serve_dashboard(self):
+        """Serve docs/monitor.html at /."""
+        dash = _PKG / 'docs' / 'monitor.html'
+        if not dash.exists():
+            self._json({'error': 'dashboard not found'}, 404)
+            return
+        body = dash.read_bytes()
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', len(body))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
         u = urlparse(self.path)
         q = parse_qs(u.query)
         try:
-            if u.path == '/api/status':
+            if u.path == '/' or u.path == '/index.html':
+                self._serve_dashboard()
+            elif u.path == '/api/status':
                 self._json(_STATE.status())
             elif u.path == '/api/history':
                 n = int(q.get('n', ['100'])[0])
@@ -431,6 +677,8 @@ class KiriHandler(http.server.BaseHTTPRequestHandler):
                 self._json(_STATE.history(atom, n))
             elif u.path == '/api/collect':
                 self._json(_STATE.collect_once())
+            elif u.path == '/api/molecule/status':
+                self._json(_STATE.molecule_status())
             else:
                 self._json({'error': 'not found'}, 404)
         except Exception as e:
@@ -462,6 +710,15 @@ class KiriHandler(http.server.BaseHTTPRequestHandler):
                 }
                 path = _nerve_log(nerve_obs, action, str(_DATA), source='human')
                 self._json({'ok': True, 'action': action, 'source': 'human', 'file': path})
+            except Exception as e:
+                self._json({'error': str(e)}, 500)
+            return
+        elif u.path == '/api/molecule/explain':
+            try:
+                body = self._read_body()
+                data = json.loads(body) if body else {}
+                result = _STATE.molecule_explain(data)
+                self._json(result)
             except Exception as e:
                 self._json({'error': str(e)}, 500)
             return
@@ -525,7 +782,7 @@ def main():
 
     server = http.server.ThreadingHTTPServer(('', args.port), KiriHandler)
     print(f'\n  http://localhost:{args.port}/api/status')
-    print(f'  dashboard: https://engeryx.github.io/kiri/monitor.html')
+    print(f'  dashboard: http://localhost:{args.port}/')
     print(f'  Ctrl+C to stop\n')
 
     try:
