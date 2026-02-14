@@ -32,15 +32,27 @@ def load_data(pattern):
         print(f"no files matching: {pattern}", file=sys.stderr)
         sys.exit(1)
 
-    observations = []
+    raw = []
     for f in files:
         with open(f) as fh:
             for line in fh:
                 line = line.strip()
                 if line:
-                    observations.append(json.loads(line))
+                    raw.append(json.loads(line))
 
-    print(f"loaded {len(observations)} observations from {len(files)} files")
+    # Prefer human-labeled data over model-labeled data.
+    # For each timestamp, if a human entry exists, drop model entries.
+    human_ts = {obs['ts'] for obs in raw if obs.get('source') == 'human'}
+    observations = [
+        obs for obs in raw
+        if obs.get('source') != 'model' or obs['ts'] not in human_ts
+    ]
+
+    n_human = sum(1 for o in observations if o.get('source') == 'human')
+    n_model = sum(1 for o in observations if o.get('source') == 'model')
+    n_unlabeled = len(observations) - n_human - n_model
+    print(f"loaded {len(observations)} observations from {len(files)} files "
+          f"(human={n_human}, model={n_model}, unlabeled={n_unlabeled})")
     return observations
 
 

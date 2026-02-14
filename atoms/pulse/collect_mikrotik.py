@@ -23,8 +23,12 @@ def collect_mikrotik():
         return None
 
     ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    if os.environ.get('MIKROTIK_INSECURE', '').strip() == '1':
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+    ca_path = os.environ.get('MIKROTIK_CA_CERT')
+    if ca_path:
+        ctx.load_verify_locations(ca_path)
 
     creds = base64.b64encode(f'{user}:{password}'.encode()).decode()
     headers = {'Authorization': f'Basic {creds}', 'Content-Type': 'application/json'}

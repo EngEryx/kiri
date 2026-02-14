@@ -11,9 +11,11 @@ from pathlib import Path
 
 
 def _run(cmd):
-    """Run a shell command and return stdout, or None on failure."""
+    """Run a command and return stdout, or None on failure."""
     try:
-        r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=5)
+        if isinstance(cmd, str):
+            cmd = cmd.split()
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
         return r.stdout.strip() if r.returncode == 0 else None
     except Exception:
         return None
@@ -23,7 +25,7 @@ def collect_local():
     """Collect live metrics from the local macOS system. Returns observation dict or None."""
     try:
         # CPU usage via top (1 sample, 0 processes)
-        top_out = _run("top -l 1 -n 0 -s 0")
+        top_out = _run(["top", "-l", "1", "-n", "0", "-s", "0"])
         cpu = 0.0
         if top_out:
             m = re.search(r'CPU usage:\s+([\d.]+)% user,\s+([\d.]+)% sys', top_out)
@@ -31,7 +33,7 @@ def collect_local():
                 cpu = float(m.group(1)) + float(m.group(2))
 
         # Memory via vm_stat
-        vm_out = _run("vm_stat")
+        vm_out = _run(["vm_stat"])
         mem = 0.0
         if vm_out:
             pages = {}
@@ -42,10 +44,10 @@ def collect_local():
                     if val.isdigit():
                         pages[key.strip()] = int(val)
             page_size = 16384  # macOS default page size
-            ps_out = _run("sysctl -n hw.pagesize")
+            ps_out = _run(["sysctl", "-n", "hw.pagesize"])
             if ps_out and ps_out.isdigit():
                 page_size = int(ps_out)
-            total_out = _run("sysctl -n hw.memsize")
+            total_out = _run(["sysctl", "-n", "hw.memsize"])
             total_bytes = int(total_out) if total_out and total_out.isdigit() else 1
             active = pages.get('Pages active', 0)
             wired = pages.get('Pages wired down', 0)
@@ -54,7 +56,7 @@ def collect_local():
             mem = (used_bytes / total_bytes) * 100
 
         # Disk usage via df
-        df_out = _run("df -k /")
+        df_out = _run(["df", "-k", "/"])
         disk = 0.0
         if df_out:
             lines = df_out.splitlines()
@@ -67,7 +69,7 @@ def collect_local():
                         disk = float(cap)
 
         # Swap via sysctl
-        swap_out = _run("sysctl vm.swapusage")
+        swap_out = _run(["sysctl", "vm.swapusage"])
         swap = 0.0
         if swap_out:
             used_m = re.search(r'used\s*=\s*([\d.]+)M', swap_out)
@@ -78,7 +80,7 @@ def collect_local():
                     swap = (float(used_m.group(1)) / total_swap) * 100
 
         # Load average
-        load_out = _run("sysctl -n vm.loadavg")
+        load_out = _run(["sysctl", "-n", "vm.loadavg"])
         load_avg = 0.0
         if load_out:
             # format: "{ 1.23 4.56 7.89 }"

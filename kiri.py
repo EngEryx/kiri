@@ -16,6 +16,8 @@ from .atoms.nerve.train import predict_action, make_nerve_language
 from .daemon.scheduler import Scheduler
 from .daemon.alerts import send_telegram
 
+import glob as _glob
+
 
 def _load_atom(weights_path, lang_path):
     """Load a trained atom from disk. Returns (atom, lang) or (None, None)."""
@@ -69,6 +71,24 @@ class KiriDaemon:
         loaded = sum(1 for a in [self.pulse_atom, self.rhythm_atom, self.drift_atom, self.nerve_atom] if a)
         print(f"loaded {loaded}/4 trained atoms")
 
+    def _latest_drift_obs(self):
+        """Read the most recent drift observation from disk."""
+        files = sorted(_glob.glob(str(Path(self.data_dir) / 'drift_*.jsonl')))
+        if not files:
+            return None
+        try:
+            last_line = None
+            with open(files[-1]) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        last_line = line
+            if last_line:
+                return json.loads(last_line)
+        except (json.JSONDecodeError, OSError):
+            pass
+        return None
+
     def _score_sequence(self, atom, obs_dict):
         """Average anomaly score for an observation through an atom."""
         if atom is None:
@@ -106,19 +126,23 @@ class KiriDaemon:
         pulse_score = self._score_sequence(self.pulse_atom, pulse_obs) if pulse_obs else 0.0
         rhythm_score = self._score_sequence(self.rhythm_atom, rhythm_obs) if rhythm_obs else 0.0
 
+        # Score latest drift observation from disk
+        drift_obs = self._latest_drift_obs()
+        drift_score = self._score_sequence(self.drift_atom, drift_obs) if drift_obs else 0.0
+
         # Nerve decision
         action = 'ok'
         if self.nerve_atom:
             nerve_obs = {
-                'P': pulse_score, 'R': rhythm_score, 'D': 0.0,
+                'P': pulse_score, 'R': rhythm_score, 'D': drift_score,
                 'H': now.hour, 'W': now.weekday(),
                 'ts': now.isoformat()
             }
             action, _ = predict_action(self.nerve_atom, nerve_obs)
-            log_feedback(nerve_obs, action, self.data_dir)
+            log_feedback(nerve_obs, action, self.data_dir, source='model')
 
         # Act
-        status = f"P={pulse_score:.1f} R={rhythm_score:.1f} -> {action}"
+        status = f"P={pulse_score:.1f} R={rhythm_score:.1f} D={drift_score:.1f} -> {action}"
         if action == 'alert' and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
             msg = f"KIRI alert: {status}"
             if pulse_obs:
