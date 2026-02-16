@@ -650,15 +650,38 @@ class KiriHandler(http.server.BaseHTTPRequestHandler):
         self._cors()
         self.end_headers()
 
-    def _serve_dashboard(self):
-        """Serve docs/monitor.html at /."""
-        dash = _PKG / 'docs' / 'monitor.html'
-        if not dash.exists():
-            self._json({'error': 'dashboard not found'}, 404)
+    _MIME = {
+        '.html': 'text/html; charset=utf-8',
+        '.css': 'text/css; charset=utf-8',
+        '.js': 'application/javascript; charset=utf-8',
+        '.json': 'application/json; charset=utf-8',
+        '.png': 'image/png',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.woff2': 'font/woff2',
+        '.woff': 'font/woff',
+        '.ttf': 'font/ttf',
+    }
+
+    def _serve_static(self, rel_path):
+        """Serve a file from docs/ with path traversal protection."""
+        docs = _PKG / 'docs'
+        target = (docs / rel_path).resolve()
+        if not str(target).startswith(str(docs.resolve())):
+            self._json({'error': 'forbidden'}, 403)
             return
-        body = dash.read_bytes()
+        if target.is_dir():
+            target = target / 'index.html'
+        if not target.is_file():
+            self._json({'error': 'not found'}, 404)
+            return
+        mime = self._MIME.get(target.suffix.lower(), 'application/octet-stream')
+        body = target.read_bytes()
         self.send_response(200)
-        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Type', mime)
         self.send_header('Content-Length', len(body))
         self.end_headers()
         self.wfile.write(body)
@@ -667,9 +690,7 @@ class KiriHandler(http.server.BaseHTTPRequestHandler):
         u = urlparse(self.path)
         q = parse_qs(u.query)
         try:
-            if u.path == '/' or u.path == '/index.html':
-                self._serve_dashboard()
-            elif u.path == '/api/status':
+            if u.path == '/api/status':
                 self._json(_STATE.status())
             elif u.path == '/api/history':
                 n = int(q.get('n', ['100'])[0])
@@ -679,8 +700,12 @@ class KiriHandler(http.server.BaseHTTPRequestHandler):
                 self._json(_STATE.collect_once())
             elif u.path == '/api/molecule/status':
                 self._json(_STATE.molecule_status())
-            else:
+            elif u.path.startswith('/api/'):
                 self._json({'error': 'not found'}, 404)
+            elif u.path == '/' or u.path == '/monitor.html':
+                self._serve_static('monitor.html')
+            else:
+                self._serve_static(u.path.lstrip('/'))
         except Exception as e:
             self._json({'error': str(e)}, 500)
 

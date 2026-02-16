@@ -1,6 +1,6 @@
 [project]
 name = "kiri"
-version = "0.1.0"
+version = "0.2.0"
 description = "Intelligent Runtime Inspector — composable tiny intelligence system"
 requires-python = ">=3.9"
 
