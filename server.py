@@ -706,8 +706,13 @@ class KiriHandler(http.server.BaseHTTPRequestHandler):
                 self._serve_static('monitor.html')
             else:
                 self._serve_static(u.path.lstrip('/'))
+        except BrokenPipeError:
+            pass
         except Exception as e:
-            self._json({'error': str(e)}, 500)
+            try:
+                self._json({'error': str(e)}, 500)
+            except BrokenPipeError:
+                pass
 
     def _read_body(self):
         length = int(self.headers.get('Content-Length', 0))
@@ -735,8 +740,11 @@ class KiriHandler(http.server.BaseHTTPRequestHandler):
                 }
                 path = _nerve_log(nerve_obs, action, str(_DATA), source='human')
                 self._json({'ok': True, 'action': action, 'source': 'human', 'file': path})
+            except BrokenPipeError:
+                pass
             except Exception as e:
-                self._json({'error': str(e)}, 500)
+                try: self._json({'error': str(e)}, 500)
+                except BrokenPipeError: pass
             return
         elif u.path == '/api/molecule/explain':
             try:
@@ -744,8 +752,11 @@ class KiriHandler(http.server.BaseHTTPRequestHandler):
                 data = json.loads(body) if body else {}
                 result = _STATE.molecule_explain(data)
                 self._json(result)
+            except BrokenPipeError:
+                pass
             except Exception as e:
-                self._json({'error': str(e)}, 500)
+                try: self._json({'error': str(e)}, 500)
+                except BrokenPipeError: pass
             return
         elif u.path == '/api/train':
             name = q.get('atom', ['pulse'])[0]
