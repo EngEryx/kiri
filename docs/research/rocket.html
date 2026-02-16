@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIRI — Rocket Flight Simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0b0f;
+  --panel: #101218;
+  --border: #1e2030;
+  --text: #c8cad0;
+  --dim: #555a6e;
+  --g: #4ade80;
+  --y: #facc15;
+  --r: #f87171;
+  --b: #60a5fa;
+  --p: #c084fc;
+  --c: #22d3ee;
+  --mono: 'IBM Plex Mono', monospace;
+  --serif: 'Newsreader', Georgia, serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--mono); font-size:12px; overflow:hidden; height:100vh; }
+
+.app { display:grid; grid-template-columns:280px 1fr 320px; height:calc(100vh - 37px); }
+
+/* ── Left Panel: Controls ── */
+.controls {
+  background:var(--panel);
+  border-right:1px solid var(--border);
+  padding:16px;
+  overflow-y:auto;
+}
+.controls h2 {
+  font-family:var(--serif);
+  font-size:18px;
+  font-weight:600;
+  margin-bottom:16px;
+  color:#fff;
+  letter-spacing:-0.3px;
+}
+.ctrl-group {
+  margin-bottom:20px;
+  padding-bottom:16px;
+  border-bottom:1px solid var(--border);
+}
+.ctrl-group:last-child { border-bottom:none; }
+.ctrl-label {
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+  color:var(--dim);
+  margin-bottom:8px;
+}
+.ctrl-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+.ctrl-row span { font-size:11px; }
+.ctrl-val { color:var(--c); font-weight:500; }
+button {
+  font-family:var(--mono);
+  font-size:11px;
+  padding:8px 16px;
+  border:1px solid var(--border);
+  background:var(--panel);
+  color:var(--text);
+  cursor:pointer;
+  transition:all 0.15s;
+  width:100%;
+  margin-bottom:6px;
+}
+button:hover { border-color:var(--c); color:#fff; }
+button.active { border-color:var(--g); color:var(--g); }
+button.danger { border-color:var(--r); color:var(--r); }
+button.danger:hover { background:rgba(248,113,113,0.1); }
+.fault-btn { width:48%; display:inline-block; }
+.fault-btn:nth-child(even) { margin-left:3%; }
+
+input[type=range] {
+  width:100%;
+  -webkit-appearance:none;
+  height:3px;
+  background:var(--border);
+  border-radius:2px;
+  outline:none;
+  margin:6px 0;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:var(--c);
+  cursor:pointer;
+}
+
+/* ── Center: Canvas ── */
+.viewport {
+  position:relative;
+  background:var(--bg);
+  overflow:hidden;
+}
+canvas { display:block; width:100%; height:100%; }
+.hud {
+  position:absolute;
+  top:16px;
+  left:16px;
+  font-size:11px;
+  line-height:1.7;
+}
+.hud-val { color:var(--c); }
+.mission-clock {
+  position:absolute;
+  top:16px;
+  right:16px;
+  font-size:20px;
+  font-weight:600;
+  color:#fff;
+  font-family:var(--mono);
+  letter-spacing:1px;
+}
+.mission-status {
+  position:absolute;
+  bottom:16px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:13px;
+  font-weight:500;
+  padding:6px 20px;
+  border-radius:2px;
+  letter-spacing:1px;
+}
+.status-nominal { background:rgba(74,222,128,0.15); color:var(--g); border:1px solid rgba(74,222,128,0.3); }
+.status-warning { background:rgba(250,204,21,0.15); color:var(--y); border:1px solid rgba(250,204,21,0.3); }
+.status-critical { background:rgba(248,113,113,0.15); color:var(--r); border:1px solid rgba(248,113,113,0.3); }
+
+/* ── Right Panel: Atoms ── */
+.atoms-panel {
+  background:var(--panel);
+  border-left:1px solid var(--border);
+  padding:16px;
+  overflow-y:auto;
+}
+.atoms-panel h2 {
+  font-family:var(--serif);
+  font-size:16px;
+  font-weight:600;
+  margin-bottom:12px;
+  color:#fff;
+}
+.atom-card {
+  background:rgba(255,255,255,0.02);
+  border:1px solid var(--border);
+  padding:12px;
+  margin-bottom:10px;
+  transition:border-color 0.3s;
+}
+.atom-card.alert { border-color:var(--r); }
+.atom-card.warn { border-color:var(--y); }
+.atom-card .atom-name {
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  margin-bottom:6px;
+}
+.atom-card .atom-name .dot {
+  display:inline-block;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  margin-right:6px;
+}
+.atom-tokens {
+  font-size:11px;
+  color:var(--dim);
+  margin-bottom:6px;
+  word-break:break-all;
+}
+.atom-score-bar {
+  height:4px;
+  background:var(--border);
+  margin-top:4px;
+  position:relative;
+  overflow:hidden;
+}
+.atom-score-fill {
+  height:100%;
+  transition:width 0.3s, background 0.3s;
+  position:absolute;
+  left:0;
+  top:0;
+}
+.atom-score-val {
+  font-size:14px;
+  font-weight:600;
+  margin-top:4px;
+}
+.composition-card {
+  background:rgba(34,211,238,0.05);
+  border:1px solid rgba(34,211,238,0.2);
+  padding:14px;
+  margin-top:12px;
+}
+.composition-card h3 {
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  color:var(--c);
+  margin-bottom:8px;
+}
+.comp-score {
+  font-size:22px;
+  font-weight:600;
+  color:#fff;
+}
+.comp-method {
+  font-size:10px;
+  color:var(--dim);
+  margin-top:2px;
+}
+.event-log {
+  margin-top:16px;
+  font-size:10px;
+  max-height:200px;
+  overflow-y:auto;
+}
+.event-log .label {
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  color:var(--dim);
+  margin-bottom:6px;
+}
+.event-entry {
+  padding:4px 0;
+  border-bottom:1px solid rgba(255,255,255,0.03);
+  line-height:1.5;
+}
+.event-entry .t { color:var(--dim); margin-right:6px; }
+.event-entry.anomaly { color:var(--r); }
+.event-entry.warning { color:var(--y); }
+</style>
+</head>
+<body>
+<div style="border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:12px;font-size:11px;background:var(--panel);z-index:200;position:relative">
+  <span style="font-weight:500;color:#fff;letter-spacing:1px">KIRI</span>
+  <span style="color:var(--border)">/</span>
+  <a href="../index.html" style="color:var(--dim);text-decoration:none">home</a>
+  <span style="color:var(--border)">/</span>
+  <a href="../walkthrough.html" style="color:var(--dim);text-decoration:none">walkthrough</a>
+  <span style="color:var(--border)">/</span>
+  <a href="understand.html" style="color:var(--dim);text-decoration:none">learn everything</a>
+  <span style="color:var(--border)">/</span>
+  <a href="hardware.html" style="color:var(--dim);text-decoration:none">hardware</a>
+  <span style="color:var(--border)">/</span>
+  <a href="sml.html" style="color:var(--dim);text-decoration:none">SML</a>
+  <span style="color:var(--border)">/</span>
+  <span style="color:#fff;font-size:11px">rocket sim</span>
+</div>
+<div class="app">
+
+<!-- ═══ LEFT: Controls ═══ -->
+<div class="controls">
+  <h2>KIRI Flight Sim</h2>
+
+  <div class="ctrl-group">
+    <div class="ctrl-label">Mission Control</div>
+    <button id="btn-launch" class="active">Launch</button>
+    <button id="btn-pause">Pause</button>
+    <button id="btn-reset">Reset</button>
+    <div class="ctrl-row" style="margin-top:8px">
+      <span>Time Warp</span>
+      <span class="ctrl-val" id="warp-val">1x</span>
+    </div>
+    <input type="range" id="warp" min="1" max="20" value="1">
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-label">Rocket Parameters</div>
+    <div class="ctrl-row"><span>Dry Mass</span><span class="ctrl-val" id="mass-val">2,200 kg</span></div>
+    <input type="range" id="dry-mass" min="500" max="5000" value="2200" step="100">
+    <div class="ctrl-row"><span>Fuel Mass</span><span class="ctrl-val" id="fuel-val">18,000 kg</span></div>
+    <input type="range" id="fuel-mass" min="5000" max="50000" value="18000" step="500">
+    <div class="ctrl-row"><span>Thrust (kN)</span><span class="ctrl-val" id="thrust-val">350 kN</span></div>
+    <input type="range" id="thrust-kn" min="100" max="1000" value="350" step="10">
+    <div class="ctrl-row"><span>Isp (s)</span><span class="ctrl-val" id="isp-val">310 s</span></div>
+    <input type="range" id="isp" min="200" max="450" value="310" step="5">
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-label">Inject Fault</div>
+    <button class="fault-btn danger" data-fault="thrust_loss">Thrust Loss</button>
+    <button class="fault-btn danger" data-fault="gimbal_stuck">Gimbal Stuck</button>
+    <button class="fault-btn danger" data-fault="fuel_leak">Fuel Leak</button>
+    <button class="fault-btn danger" data-fault="sensor_noise">Sensor Noise</button>
+    <button class="fault-btn danger" data-fault="vibration">Vibration</button>
+    <button class="fault-btn danger" data-fault="roll_coupling">Roll Couple</button>
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-label">Atom Surprise Threshold</div>
+    <div class="ctrl-row"><span>Threshold</span><span class="ctrl-val" id="thresh-val">2.0</span></div>
+    <input type="range" id="threshold" min="0.5" max="5" value="2" step="0.1">
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-label">Physics</div>
+    <div class="ctrl-row"><span>g₀</span><span class="ctrl-val">9.807 m/s²</span></div>
+    <div class="ctrl-row"><span>R<sub>earth</sub></span><span class="ctrl-val">6,371 km</span></div>
+    <div class="ctrl-row"><span>Drag model</span><span class="ctrl-val">Exponential</span></div>
+    <div class="ctrl-row"><span>Scale height</span><span class="ctrl-val">8,500 m</span></div>
+  </div>
+</div>
+
+<!-- ═══ CENTER: Viewport ═══ -->
+<div class="viewport">
+  <canvas id="sim"></canvas>
+  <div class="hud">
+    <div>ALT <span class="hud-val" id="hud-alt">0 m</span></div>
+    <div>VEL <span class="hud-val" id="hud-vel">0 m/s</span></div>
+    <div>ACC <span class="hud-val" id="hud-acc">0 m/s²</span></div>
+    <div>TWR <span class="hud-val" id="hud-twr">0.00</span></div>
+    <div>FUEL <span class="hud-val" id="hud-fuel">100%</span></div>
+    <div>Q <span class="hud-val" id="hud-q">0 Pa</span></div>
+    <div>MACH <span class="hud-val" id="hud-mach">0.00</span></div>
+  </div>
+  <div class="mission-clock" id="clock">T+00:00.0</div>
+  <div class="mission-status status-nominal" id="status">NOMINAL</div>
+</div>
+
+<!-- ═══ RIGHT: Atoms Panel ═══ -->
+<div class="atoms-panel">
+  <h2>KIRI Atoms</h2>
+
+  <div class="atom-card" id="atom-thrust">
+    <div class="atom-name"><span class="dot" style="background:var(--g)"></span>THRUST</div>
+    <div class="atom-tokens" id="thrust-tokens">—</div>
+    <div class="atom-score-val" id="thrust-score">0.00</div>
+    <div class="atom-score-bar"><div class="atom-score-fill" id="thrust-bar"></div></div>
+  </div>
+
+  <div class="atom-card" id="atom-attitude">
+    <div class="atom-name"><span class="dot" style="background:var(--b)"></span>ATTITUDE</div>
+    <div class="atom-tokens" id="attitude-tokens">—</div>
+    <div class="atom-score-val" id="attitude-score">0.00</div>
+    <div class="atom-score-bar"><div class="atom-score-fill" id="attitude-bar"></div></div>
+  </div>
+
+  <div class="atom-card" id="atom-altitude">
+    <div class="atom-name"><span class="dot" style="background:var(--p)"></span>ALTITUDE</div>
+    <div class="atom-tokens" id="altitude-tokens">—</div>
+    <div class="atom-score-val" id="altitude-score">0.00</div>
+    <div class="atom-score-bar"><div class="atom-score-fill" id="altitude-bar"></div></div>
+  </div>
+
+  <div class="atom-card" id="atom-vibration">
+    <div class="atom-name"><span class="dot" style="background:var(--y)"></span>VIBRATION</div>
+    <div class="atom-tokens" id="vibration-tokens">—</div>
+    <div class="atom-score-val" id="vibration-score">0.00</div>
+    <div class="atom-score-bar"><div class="atom-score-fill" id="vibration-bar"></div></div>
+  </div>
+
+  <div class="composition-card">
+    <h3>Composition (P+R sum)</h3>
+    <div class="comp-score" id="comp-score">0.00</div>
+    <div class="comp-method">sum of all atom scores</div>
+  </div>
+
+  <div class="event-log">
+    <div class="label">Event Log</div>
+    <div id="log"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// PHYSICS ENGINE — accurate orbital/atmospheric rocket sim
+// ═══════════════════════════════════════════════════════════
+const G0 = 9.80665;         // m/s² standard gravity
+const R_EARTH = 6371000;    // m earth radius
+const M_EARTH = 5.972e24;   // kg
+const G_CONST = 6.674e-11;  // gravitational constant
+const RHO_0 = 1.225;        // kg/m³ sea level air density
+const H_SCALE = 8500;       // m atmospheric scale height
+const C_D = 0.3;            // drag coefficient
+const A_REF = 3.14;         // m² reference area (rocket cross section ~2m dia)
+const GAMMA = 1.4;          // ratio of specific heats (air)
+const R_GAS = 287;          // J/(kg·K) specific gas constant air
+
+class Rocket {
+  constructor() { this.reset(); }
+  reset() {
+    this.alt = 0;            // m altitude above sea level
+    this.vel = 0;            // m/s vertical velocity
+    this.angle = 0;          // rad pitch angle (0 = vertical)
+    this.angVel = 0;         // rad/s angular velocity
+    this.dryMass = 2200;     // kg
+    this.fuelMass = 18000;   // kg
+    this.fuelMax = 18000;
+    this.thrustN = 350000;   // N
+    this.isp = 310;          // s specific impulse
+    this.throttle = 1.0;
+    this.time = 0;
+    this.launched = false;
+    this.destroyed = false;
+    this.maxQ = 0;
+    this.maxAlt = 0;
+    this.vibLevel = 0;       // 0-1 structural vibration
+    // Faults
+    this.faults = { thrust_loss:false, gimbal_stuck:false, fuel_leak:false, sensor_noise:false, vibration:false, roll_coupling:false };
+  }
+
+  get mass() { return this.dryMass + this.fuelMass; }
+  get fuelFrac() { return this.fuelMass / this.fuelMax; }
+
+  // Gravity at altitude (inverse square)
+  gravity(alt) {
+    const r = R_EARTH + alt;
+    return G_CONST * M_EARTH / (r * r);
+  }
+
+  // Atmospheric density (exponential model)
+  airDensity(alt) {
+    if (alt > 150000) return 0; // effectively vacuum above 150km
+    return RHO_0 * Math.exp(-alt / H_SCALE);
+  }
+
+  // Temperature model (ISA)
+  temperature(alt) {
+    if (alt < 11000) return 288.15 - 0.0065 * alt;
+    if (alt < 20000) return 216.65;
+    return 216.65 + 0.001 * (alt - 20000);
+  }
+
+  // Speed of sound
+  speedOfSound(alt) {
+    return Math.sqrt(GAMMA * R_GAS * this.temperature(alt));
+  }
+
+  // Dynamic pressure
+  dynamicPressure(alt, vel) {
+    return 0.5 * this.airDensity(alt) * vel * vel;
+  }
+
+  step(dt) {
+    if (!this.launched || this.destroyed) return;
+
+    // ── Effective thrust ──
+    let effThrust = this.thrustN * this.throttle;
+    if (this.faults.thrust_loss) effThrust *= 0.35; // 65% loss
+
+    // ── Fuel consumption (Tsiolkovsky) ──
+    const mdot = effThrust / (this.isp * G0); // kg/s mass flow rate
+    let fuelUsed = mdot * dt;
+    if (this.faults.fuel_leak) fuelUsed *= 1.8; // 80% more fuel consumption
+    if (this.fuelMass > 0) {
+      this.fuelMass = Math.max(0, this.fuelMass - fuelUsed);
+    } else {
+      effThrust = 0;
+    }
+
+    // ── Forces ──
+    const g = this.gravity(this.alt);
+    const rho = this.airDensity(this.alt);
+    const qPa = this.dynamicPressure(this.alt, Math.abs(this.vel));
+
+    // Drag (opposes velocity)
+    const dragForce = qPa * C_D * A_REF * (this.vel > 0 ? -1 : 1);
+
+    // Net acceleration along vertical axis
+    const thrustAccel = (effThrust * Math.cos(this.angle)) / this.mass;
+    const dragAccel = dragForce / this.mass;
+    const netAccel = thrustAccel + dragAccel - g;
+
+    // ── Attitude dynamics ──
+    if (this.faults.gimbal_stuck) {
+      // Gimbal stuck at 2 degrees — constant torque
+      this.angVel += 0.003 * dt;
+    } else if (this.faults.roll_coupling) {
+      // Roll-yaw coupling oscillation
+      this.angVel += Math.sin(this.time * 3.5) * 0.02 * dt;
+    } else {
+      // Gravity turn: gradual pitch over
+      if (this.alt > 1000 && this.alt < 50000) {
+        const targetAngle = Math.min(0.4, (this.alt - 1000) / 100000);
+        this.angVel += (targetAngle - this.angle) * 0.5 * dt;
+      }
+      this.angVel *= 0.95; // damping (control system)
+    }
+    this.angle += this.angVel * dt;
+
+    // ── Vibration model ──
+    const baseVib = qPa / 50000; // vibration from aerodynamic load
+    const engineVib = effThrust > 0 ? 0.05 + Math.random() * 0.03 : 0;
+    this.vibLevel = Math.min(1, baseVib + engineVib);
+    if (this.faults.vibration) {
+      this.vibLevel = Math.min(1, this.vibLevel + 0.3 + Math.sin(this.time * 15) * 0.15);
+    }
+
+    // ── Integration (Euler) ──
+    this.vel += netAccel * dt;
+    this.alt += this.vel * dt;
+
+    // Ground collision
+    if (this.alt < 0) {
+      this.alt = 0;
+      this.vel = 0;
+      if (this.launched) this.destroyed = true;
+    }
+
+    // Structural failure at excessive Q or angle
+    if (qPa > 80000 || Math.abs(this.angle) > 1.2) {
+      this.destroyed = true;
+    }
+
+    this.maxQ = Math.max(this.maxQ, qPa);
+    this.maxAlt = Math.max(this.maxAlt, this.alt);
+    this.time += dt;
+
+    return { alt: this.alt, vel: this.vel, acc: netAccel, q: qPa, thrust: effThrust, g, rho, angle: this.angle, angVel: this.angVel, vib: this.vibLevel };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// KIRI ATOM SIMULATION — token quantization + surprise
+// ═══════════════════════════════════════════════════════════
+class AtomSim {
+  constructor(name, schema) {
+    this.name = name;
+    this.schema = schema; // {field: [min, max, buckets]}
+    this.history = [];     // last N tokenized observations
+    this.windowSize = 12;
+    this.expected = {};    // learned frequency distribution per position
+    this.trainCount = 0;
+  }
+
+  quantize(values) {
+    const tokens = [];
+    for (const [field, [min, max, n]] of Object.entries(this.schema)) {
+      const v = Math.max(min, Math.min(max, values[field] || 0));
+      const bucket = Math.min(n - 1, Math.floor(n * (v - min) / (max - min + 1e-9)));
+      tokens.push({ field, bucket, label: field[0].toUpperCase() + bucket });
+    }
+    return tokens;
+  }
+
+  observe(values) {
+    const tokens = this.quantize(values);
+    this.history.push(tokens);
+    if (this.history.length > this.windowSize) this.history.shift();
+
+    // Learn: accumulate token frequencies per position
+    tokens.forEach((tok, i) => {
+      const key = `${i}:${tok.label}`;
+      this.expected[key] = (this.expected[key] || 0) + 1;
+      this.trainCount++;
+    });
+
+    return tokens;
+  }
+
+  surprise(tokens) {
+    if (this.trainCount < 50) return 0; // not enough data
+    let totalSurprise = 0;
+    tokens.forEach((tok, i) => {
+      const key = `${i}:${tok.label}`;
+      const count = this.expected[key] || 0;
+      const totalAtPos = Object.keys(this.expected)
+        .filter(k => k.startsWith(`${i}:`))
+        .reduce((s, k) => s + this.expected[k], 0);
+      const prob = totalAtPos > 0 ? (count + 1) / (totalAtPos + this.schema ? Object.keys(this.schema).length * 10 : 10) : 0.01;
+      totalSurprise += -Math.log(Math.max(prob, 1e-6));
+    });
+    return totalSurprise / tokens.length;
+  }
+
+  tokenString(tokens) {
+    return tokens.map(t => t.label).join(' ');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDERER — 2D canvas rocket visualization
+// ═══════════════════════════════════════════════════════════
+const canvas = document.getElementById('sim');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  W = canvas.width = rect.width * devicePixelRatio;
+  H = canvas.height = rect.height * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+}
+resize();
+window.addEventListener('resize', resize);
+
+function drawStars(t) {
+  // Parallax star field
+  const seed = 42;
+  for (let i = 0; i < 120; i++) {
+    const sx = ((seed * (i+1) * 7919) % W) / devicePixelRatio;
+    const sy = (((seed * (i+1) * 104729) % H) / devicePixelRatio + t * (0.2 + (i % 3) * 0.1)) % (H / devicePixelRatio);
+    const brightness = 0.3 + (i % 5) * 0.15;
+    ctx.fillStyle = `rgba(255,255,255,${brightness})`;
+    ctx.fillRect(sx, sy, 1.2, 1.2);
+  }
+}
+
+function drawAtmosphere(alt) {
+  const w = W / devicePixelRatio;
+  const h = H / devicePixelRatio;
+  // Blue gradient fading with altitude
+  const opacity = Math.max(0, 1 - alt / 100000);
+  if (opacity > 0) {
+    const grad = ctx.createLinearGradient(0, h * 0.5, 0, h);
+    grad.addColorStop(0, `rgba(15,25,60,${opacity * 0.3})`);
+    grad.addColorStop(1, `rgba(40,80,140,${opacity * 0.6})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  }
+}
+
+function drawGround(alt) {
+  const w = W / devicePixelRatio;
+  const h = H / devicePixelRatio;
+  const groundY = h - 60 + Math.min(alt * 0.02, h * 0.3);
+  if (groundY < h + 100) {
+    ctx.fillStyle = '#1a2a15';
+    ctx.fillRect(0, groundY, w, h - groundY + 100);
+    // Launch pad
+    if (alt < 5000) {
+      ctx.fillStyle = '#333';
+      ctx.fillRect(w/2 - 20, groundY - 2, 40, 4);
+      ctx.fillStyle = '#555';
+      ctx.fillRect(w/2 - 3, groundY - 30, 6, 30);
+    }
+  }
+}
+
+function drawRocket(rocket) {
+  const w = W / devicePixelRatio;
+  const h = H / devicePixelRatio;
+  const cx = w / 2;
+  const cy = h * 0.45;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rocket.angle);
+
+  // Body
+  const bh = 40, bw = 8;
+  ctx.fillStyle = rocket.destroyed ? '#666' : '#e0e0e0';
+  ctx.beginPath();
+  ctx.moveTo(0, -bh);
+  ctx.lineTo(bw, bh * 0.3);
+  ctx.lineTo(bw, bh);
+  ctx.lineTo(-bw, bh);
+  ctx.lineTo(-bw, bh * 0.3);
+  ctx.closePath();
+  ctx.fill();
+
+  // Nose cone
+  ctx.fillStyle = rocket.destroyed ? '#555' : '#c0c0c0';
+  ctx.beginPath();
+  ctx.moveTo(0, -bh - 12);
+  ctx.lineTo(bw * 0.7, -bh);
+  ctx.lineTo(-bw * 0.7, -bh);
+  ctx.closePath();
+  ctx.fill();
+
+  // Fins
+  ctx.fillStyle = '#888';
+  ctx.beginPath();
+  ctx.moveTo(-bw, bh);
+  ctx.lineTo(-bw - 8, bh + 8);
+  ctx.lineTo(-bw, bh - 5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(bw, bh);
+  ctx.lineTo(bw + 8, bh + 8);
+  ctx.lineTo(bw, bh - 5);
+  ctx.closePath();
+  ctx.fill();
+
+  // Exhaust plume
+  if (rocket.fuelMass > 0 && rocket.launched && !rocket.destroyed) {
+    const flameLen = 20 + Math.random() * 15 + rocket.throttle * 20;
+    const flameW = 4 + rocket.throttle * 4;
+    const grad = ctx.createLinearGradient(0, bh, 0, bh + flameLen);
+    grad.addColorStop(0, 'rgba(255,200,50,0.95)');
+    grad.addColorStop(0.3, 'rgba(255,120,20,0.8)');
+    grad.addColorStop(0.7, 'rgba(255,60,10,0.4)');
+    grad.addColorStop(1, 'rgba(255,30,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(-flameW, bh);
+    ctx.quadraticCurveTo(0, bh + flameLen * 0.7, 0, bh + flameLen);
+    ctx.quadraticCurveTo(0, bh + flameLen * 0.7, flameW, bh);
+    ctx.closePath();
+    ctx.fill();
+
+    // Inner white core
+    ctx.fillStyle = 'rgba(255,255,230,0.6)';
+    ctx.beginPath();
+    ctx.moveTo(-2, bh);
+    ctx.quadraticCurveTo(0, bh + flameLen * 0.4, 0, bh + flameLen * 0.5);
+    ctx.quadraticCurveTo(0, bh + flameLen * 0.4, 2, bh);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Vibration shake
+  if (rocket.vibLevel > 0.3) {
+    const shake = rocket.vibLevel * 3;
+    ctx.translate(Math.random() * shake - shake/2, Math.random() * shake - shake/2);
+  }
+
+  ctx.restore();
+
+  // Destruction effect
+  if (rocket.destroyed) {
+    ctx.fillStyle = 'rgba(255,100,30,0.3)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 30 + Math.random() * 20, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawTrajectory(history) {
+  if (history.length < 2) return;
+  const w = W / devicePixelRatio;
+  const h = H / devicePixelRatio;
+  ctx.strokeStyle = 'rgba(96,165,250,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  const maxAlt = Math.max(...history.map(h => h.alt), 1);
+  history.forEach((pt, i) => {
+    const x = w/2 + Math.sin(pt.angle || 0) * (i * 0.3);
+    const y = h * 0.45 + (1 - pt.alt / maxAlt) * h * 0.3;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAIN LOOP
+// ═══════════════════════════════════════════════════════════
+const rocket = new Rocket();
+let paused = false;
+let warp = 1;
+let threshold = 2.0;
+const trajHistory = [];
+
+// Create atoms
+const thrustAtom = new AtomSim('thrust', {
+  T: [0, 400000, 10],    // thrust N
+  F: [0, 1, 10],          // fuel fraction
+  M: [0, 25000, 10],      // mass flow
+});
+const attitudeAtom = new AtomSim('attitude', {
+  P: [-1, 1, 10],         // pitch angle (rad, clamped)
+  W: [-0.5, 0.5, 10],     // angular velocity
+  A: [-20, 20, 10],       // acceleration
+});
+const altitudeAtom = new AtomSim('altitude', {
+  H: [0, 200000, 10],     // altitude m
+  V: [-500, 3000, 10],    // velocity m/s
+  Q: [0, 80000, 10],      // dynamic pressure Pa
+});
+const vibrationAtom = new AtomSim('vibration', {
+  L: [0, 1, 10],          // vibration level
+  R: [0, 1, 10],          // rho (air density normalized)
+  G: [0, 10, 10],         // g-force
+});
+
+function addLog(msg, type = '') {
+  const log = document.getElementById('log');
+  const t = rocket.time.toFixed(1);
+  const div = document.createElement('div');
+  div.className = 'event-entry ' + type;
+  div.innerHTML = `<span class="t">T+${t}s</span>${msg}`;
+  log.prepend(div);
+  if (log.children.length > 50) log.removeChild(log.lastChild);
+}
+
+function updateAtomUI(name, tokens, score) {
+  document.getElementById(`${name}-tokens`).textContent = tokens.map(t => t.label).join(' ');
+  document.getElementById(`${name}-score`).textContent = score.toFixed(2);
+  document.getElementById(`${name}-score`).style.color = score > threshold ? 'var(--r)' : score > threshold * 0.7 ? 'var(--y)' : 'var(--g)';
+
+  const pct = Math.min(100, (score / 5) * 100);
+  const bar = document.getElementById(`${name}-bar`);
+  bar.style.width = pct + '%';
+  bar.style.background = score > threshold ? 'var(--r)' : score > threshold * 0.7 ? 'var(--y)' : 'var(--g)';
+
+  const card = document.getElementById(`atom-${name}`);
+  card.classList.remove('alert', 'warn');
+  if (score > threshold) card.classList.add('alert');
+  else if (score > threshold * 0.7) card.classList.add('warn');
+}
+
+let lastLogTime = 0;
+
+function tick() {
+  if (paused || !rocket.launched) {
+    requestAnimationFrame(tick);
+    render();
+    return;
+  }
+
+  const dt = 0.05 * warp; // simulation timestep
+  const state = rocket.step(dt);
+  if (!state) { requestAnimationFrame(tick); render(); return; }
+
+  trajHistory.push({ alt: state.alt, angle: state.angle });
+  if (trajHistory.length > 500) trajHistory.shift();
+
+  // ── Feed atoms (every ~0.5s sim time) ──
+  if (Math.floor(rocket.time * 2) > Math.floor((rocket.time - dt) * 2)) {
+    // Add sensor noise if fault active
+    const noise = rocket.faults.sensor_noise ? () => (Math.random() - 0.5) * 0.3 : () => 0;
+
+    const tToks = thrustAtom.observe({
+      T: state.thrust + noise() * 50000,
+      F: rocket.fuelFrac + noise(),
+      M: state.thrust / (rocket.isp * G0) + noise() * 100,
+    });
+    const aToks = attitudeAtom.observe({
+      P: state.angle + noise(),
+      W: state.angVel + noise() * 0.1,
+      A: state.acc + noise() * 5,
+    });
+    const hToks = altitudeAtom.observe({
+      H: state.alt + noise() * 1000,
+      V: state.vel + noise() * 50,
+      Q: state.q + noise() * 5000,
+    });
+    const vToks = vibrationAtom.observe({
+      L: state.vib + noise() * 0.2,
+      R: Math.min(1, rocket.airDensity(state.alt) / RHO_0),
+      G: Math.abs(state.acc / G0),
+    });
+
+    const s1 = thrustAtom.surprise(tToks);
+    const s2 = attitudeAtom.surprise(aToks);
+    const s3 = altitudeAtom.surprise(hToks);
+    const s4 = vibrationAtom.surprise(vToks);
+    const composed = s1 + s2 + s3 + s4; // sum composition (paper's best method)
+
+    updateAtomUI('thrust', tToks, s1);
+    updateAtomUI('attitude', aToks, s2);
+    updateAtomUI('altitude', hToks, s3);
+    updateAtomUI('vibration', vToks, s4);
+    document.getElementById('comp-score').textContent = composed.toFixed(2);
+    document.getElementById('comp-score').style.color = composed > threshold * 2 ? 'var(--r)' : composed > threshold * 1.5 ? 'var(--y)' : 'var(--c)';
+
+    // Log anomalies
+    if (rocket.time - lastLogTime > 2) {
+      if (s1 > threshold) { addLog(`THRUST surprise ${s1.toFixed(2)}`, 'anomaly'); lastLogTime = rocket.time; }
+      if (s2 > threshold) { addLog(`ATTITUDE surprise ${s2.toFixed(2)}`, 'anomaly'); lastLogTime = rocket.time; }
+      if (s3 > threshold) { addLog(`ALTITUDE surprise ${s3.toFixed(2)}`, 'warning'); lastLogTime = rocket.time; }
+      if (s4 > threshold) { addLog(`VIBRATION surprise ${s4.toFixed(2)}`, 'warning'); lastLogTime = rocket.time; }
+      if (composed > threshold * 2) { addLog(`COMPOSED ${composed.toFixed(2)} — cross-domain anomaly`, 'anomaly'); lastLogTime = rocket.time; }
+    }
+  }
+
+  // ── Update HUD ──
+  document.getElementById('hud-alt').textContent = state.alt > 1000 ? (state.alt/1000).toFixed(1) + ' km' : state.alt.toFixed(0) + ' m';
+  document.getElementById('hud-vel').textContent = state.vel.toFixed(1) + ' m/s';
+  document.getElementById('hud-acc').textContent = state.acc.toFixed(1) + ' m/s²';
+  document.getElementById('hud-twr').textContent = (state.thrust / (rocket.mass * state.g)).toFixed(2);
+  document.getElementById('hud-fuel').textContent = (rocket.fuelFrac * 100).toFixed(1) + '%';
+  document.getElementById('hud-q').textContent = state.q > 1000 ? (state.q/1000).toFixed(1) + ' kPa' : state.q.toFixed(0) + ' Pa';
+  document.getElementById('hud-mach').textContent = (state.vel / rocket.speedOfSound(state.alt)).toFixed(2);
+
+  // Mission clock
+  const mins = Math.floor(rocket.time / 60);
+  const secs = (rocket.time % 60).toFixed(1);
+  document.getElementById('clock').textContent = `T+${String(mins).padStart(2,'0')}:${secs.padStart(4,'0')}`;
+
+  // Status
+  const statusEl = document.getElementById('status');
+  const anyFault = Object.values(rocket.faults).some(f => f);
+  if (rocket.destroyed) {
+    statusEl.textContent = 'VEHICLE LOST';
+    statusEl.className = 'mission-status status-critical';
+  } else if (anyFault) {
+    statusEl.textContent = 'FAULT ACTIVE';
+    statusEl.className = 'mission-status status-warning';
+  } else {
+    statusEl.textContent = 'NOMINAL';
+    statusEl.className = 'mission-status status-nominal';
+  }
+
+  render();
+  requestAnimationFrame(tick);
+}
+
+function render() {
+  const w = W / devicePixelRatio;
+  const h = H / devicePixelRatio;
+  ctx.clearRect(0, 0, w, h);
+
+  // Background
+  ctx.fillStyle = '#050508';
+  ctx.fillRect(0, 0, w, h);
+  drawStars(rocket.time * 0.5);
+  drawAtmosphere(rocket.alt);
+  drawGround(rocket.alt);
+  drawTrajectory(trajHistory);
+  drawRocket(rocket);
+}
+
+// ── Controls ──
+document.getElementById('btn-launch').addEventListener('click', () => {
+  if (!rocket.launched) {
+    rocket.launched = true;
+    addLog('IGNITION — LIFTOFF');
+    tick();
+  }
+});
+
+document.getElementById('btn-pause').addEventListener('click', function() {
+  paused = !paused;
+  this.textContent = paused ? 'Resume' : 'Pause';
+  if (!paused) tick();
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  rocket.reset();
+  rocket.dryMass = parseInt(document.getElementById('dry-mass').value);
+  rocket.fuelMass = parseInt(document.getElementById('fuel-mass').value);
+  rocket.fuelMax = rocket.fuelMass;
+  rocket.thrustN = parseInt(document.getElementById('thrust-kn').value) * 1000;
+  rocket.isp = parseInt(document.getElementById('isp').value);
+  trajHistory.length = 0;
+  [thrustAtom, attitudeAtom, altitudeAtom, vibrationAtom].forEach(a => { a.history = []; a.expected = {}; a.trainCount = 0; });
+  document.getElementById('log').innerHTML = '';
+  addLog('RESET — ready for launch');
+  document.getElementById('status').textContent = 'READY';
+  document.getElementById('status').className = 'mission-status status-nominal';
+  document.getElementById('clock').textContent = 'T+00:00.0';
+  render();
+});
+
+// Sliders
+document.getElementById('warp').addEventListener('input', function() {
+  warp = parseInt(this.value);
+  document.getElementById('warp-val').textContent = warp + 'x';
+});
+document.getElementById('dry-mass').addEventListener('input', function() {
+  rocket.dryMass = parseInt(this.value);
+  document.getElementById('mass-val').textContent = parseInt(this.value).toLocaleString() + ' kg';
+});
+document.getElementById('fuel-mass').addEventListener('input', function() {
+  if (!rocket.launched) { rocket.fuelMass = parseInt(this.value); rocket.fuelMax = rocket.fuelMass; }
+  document.getElementById('fuel-val').textContent = parseInt(this.value).toLocaleString() + ' kg';
+});
+document.getElementById('thrust-kn').addEventListener('input', function() {
+  rocket.thrustN = parseInt(this.value) * 1000;
+  document.getElementById('thrust-val').textContent = parseInt(this.value) + ' kN';
+});
+document.getElementById('isp').addEventListener('input', function() {
+  rocket.isp = parseInt(this.value);
+  document.getElementById('isp-val').textContent = parseInt(this.value) + ' s';
+});
+document.getElementById('threshold').addEventListener('input', function() {
+  threshold = parseFloat(this.value);
+  document.getElementById('thresh-val').textContent = threshold.toFixed(1);
+});
+
+// Fault buttons
+document.querySelectorAll('.fault-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const fault = this.dataset.fault;
+    rocket.faults[fault] = !rocket.faults[fault];
+    this.classList.toggle('active');
+    if (rocket.faults[fault]) {
+      addLog(`FAULT INJECTED: ${fault.replace('_',' ').toUpperCase()}`, 'anomaly');
+    } else {
+      addLog(`FAULT CLEARED: ${fault.replace('_',' ').toUpperCase()}`);
+    }
+  });
+});
+
+// Initial render
+render();
+addLog('KIRI Flight Sim initialized — 4 atoms monitoring');
+addLog('Thrust · Attitude · Altitude · Vibration');
+</script>
+</body>
+</html>
