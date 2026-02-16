@@ -10,3 +10,6 @@ DONOTCOMMIT_*
 *DONOTCOMMIT*
 .coverage
 data/*.log
+benchmark/weights/
+benchmark/results/
+benchmark/data/

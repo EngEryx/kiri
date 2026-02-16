@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SML — Formal Semantics of the State Modeling Language</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@300;400;500&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FAFAF7;
+  --paper: #FFFFFF;
+  --ink: #1a1a1a;
+  --dim: #6b6b6b;
+  --rule: #d4d0c8;
+  --accent: #8B2500;
+  --accent2: #2B547E;
+  --math-bg: #F5F3EE;
+  --def-bg: #F0EDE4;
+  --thm-bg: #EDF2F7;
+  --ex-bg: #F7F3ED;
+  --code-bg: #2d2d2d;
+  --code-fg: #f0ebe3;
+  --serif: 'Crimson Pro', 'Georgia', serif;
+  --sans: 'Source Sans 3', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 60px 24px 120px;
+}
+
+/* ── Title Block ── */
+.title-block {
+  text-align: center;
+  padding: 80px 0 60px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 48px;
+}
+.title-block h1 {
+  font-family: var(--serif);
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+.title-block .subtitle {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--dim);
+  margin-bottom: 28px;
+}
+.title-block .authors {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+.title-block .affiliation {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--dim);
+  margin-top: 4px;
+}
+.title-block .date {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--dim);
+  margin-top: 12px;
+}
+.title-block .draft {
+  display: inline-block;
+  margin-top: 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 4px 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── Abstract ── */
+.abstract {
+  background: var(--math-bg);
+  border-left: 3px solid var(--accent);
+  padding: 24px 28px;
+  margin-bottom: 48px;
+  font-size: 16px;
+  line-height: 1.65;
+}
+.abstract strong {
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+/* ── Sections ── */
+h2 {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 600;
+  margin-top: 56px;
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+}
+h2 .num {
+  color: var(--accent);
+  margin-right: 8px;
+}
+h3 {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 36px;
+  margin-bottom: 12px;
+}
+h3 .num { color: var(--accent2); margin-right: 6px; }
+
+p { margin-bottom: 16px; }
+
+/* ── Formal Blocks ── */
+.definition, .theorem, .lemma, .example, .remark {
+  padding: 20px 24px;
+  margin: 24px 0;
+  border-radius: 2px;
+}
+.definition {
+  background: var(--def-bg);
+  border-left: 3px solid var(--accent);
+}
+.theorem, .lemma {
+  background: var(--thm-bg);
+  border-left: 3px solid var(--accent2);
+}
+.example {
+  background: var(--ex-bg);
+  border-left: 3px solid #8B7355;
+}
+.remark {
+  background: #F7F7F2;
+  border-left: 3px solid var(--dim);
+}
+.definition .label, .theorem .label, .lemma .label, .example .label, .remark .label {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: block;
+}
+.definition .label { color: var(--accent); }
+.theorem .label, .lemma .label { color: var(--accent2); }
+.example .label { color: #8B7355; }
+.remark .label { color: var(--dim); }
+
+/* ── Math ── */
+.math {
+  background: var(--math-bg);
+  padding: 16px 24px;
+  margin: 20px 0;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.9;
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+}
+.math .comment { color: var(--dim); font-style: italic; }
+
+/* ── Code ── */
+pre {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  padding: 20px 24px;
+  margin: 20px 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-x: auto;
+  border-radius: 3px;
+}
+pre .kw { color: #f0a6a0; }
+pre .fn { color: #a0c8f0; }
+pre .str { color: #b8d8a0; }
+pre .cm { color: #888; font-style: italic; }
+pre .num { color: #d8c8a0; }
+code {
+  font-family: var(--mono);
+  font-size: 15px;
+  background: var(--math-bg);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+/* ── Table ── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 15px;
+}
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+}
+th {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+  border-bottom: 2px solid var(--ink);
+}
+
+/* ── Misc ── */
+.footnote {
+  font-size: 14px;
+  color: var(--dim);
+  border-top: 1px solid var(--rule);
+  margin-top: 48px;
+  padding-top: 16px;
+}
+em { font-style: italic; }
+strong { font-weight: 600; }
+.sc { font-variant: small-caps; letter-spacing: 0.5px; }
+a { color: var(--accent2); text-decoration: none; border-bottom: 1px solid transparent; }
+a:hover { border-bottom-color: var(--accent2); }
+.toc { margin: 24px 0 48px; }
+.toc a { display: block; padding: 4px 0; font-family: var(--sans); font-size: 15px; color: var(--ink); }
+.toc a:hover { color: var(--accent); }
+.toc .indent { padding-left: 24px; }
+
+@media (max-width: 600px) {
+  .title-block h1 { font-size: 28px; }
+  body { font-size: 16px; }
+  .math { font-size: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TITLE -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="title-block">
+  <h1>SML: The State Modeling Language</h1>
+  <div class="subtitle">Formal Semantics for Probabilistic Control Flow<br>over Learned State Representations</div>
+  <div class="authors">Eric Kirima</div>
+  <div class="affiliation">Eryx Labs</div>
+  <div class="date">February 2026</div>
+  <div class="draft">Working Draft v0.1</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- ABSTRACT -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="abstract">
+  <strong>Abstract</strong>
+  We present the formal semantics of SML (State Modeling Language), a domain-specific language for writing programs whose control flow depends on the statistical surprise of observed state relative to a learned model of normal behavior. SML introduces three novel language primitives: <em>surprise</em> as a first-class control flow operator, <em>train</em> as a runtime instruction that modifies future execution paths without altering source code, and <em>token types</em> that carry distributional distance semantics rather than equality semantics. We define the abstract syntax, type system, operational semantics, and key properties of SML programs, including a soundness result for the type system and a convergence property for the self-modifying runtime. SML targets a transpilation pipeline producing Python/PyTorch for host systems and C/TFLite for microcontrollers. The reference implementation, KIRI, demonstrates these semantics on real-time system telemetry with micro-transformers under 30,000 parameters.
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TABLE OF CONTENTS -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="toc">
+  <a href="#s1"><span class="num">1</span> Introduction</a>
+  <a href="#s2"><span class="num">2</span> Core Concepts</a>
+  <a href="#s3" class="indent">2.1 Signals, Tokens, and Vocabularies</a>
+  <a href="#s4" class="indent">2.2 Flows and State Models</a>
+  <a href="#s5" class="indent">2.3 Surprise and Drift</a>
+  <a href="#s6"><span class="num">3</span> Abstract Syntax</a>
+  <a href="#s7"><span class="num">4</span> Type System</a>
+  <a href="#s8" class="indent">4.1 Token Types as Distributions</a>
+  <a href="#s9" class="indent">4.2 Typing Rules</a>
+  <a href="#s10" class="indent">4.3 Type Soundness</a>
+  <a href="#s11"><span class="num">5</span> Operational Semantics</a>
+  <a href="#s12" class="indent">5.1 Runtime State</a>
+  <a href="#s13" class="indent">5.2 Signal Collection</a>
+  <a href="#s14" class="indent">5.3 Surprise Evaluation</a>
+  <a href="#s15" class="indent">5.4 The Train Rule</a>
+  <a href="#s16" class="indent">5.5 Reaction Dispatch</a>
+  <a href="#s17"><span class="num">6</span> Properties</a>
+  <a href="#s18" class="indent">6.1 Monotonic Adaptation</a>
+  <a href="#s19" class="indent">6.2 Convergence</a>
+  <a href="#s20" class="indent">6.3 Determinism Modulo Weights</a>
+  <a href="#s21"><span class="num">7</span> Compilation</a>
+  <a href="#s22"><span class="num">8</span> Relation to Existing Work</a>
+  <a href="#s23"><span class="num">9</span> Open Questions</a>
+</div>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 1. INTRODUCTION -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s1"><span class="num">1</span> Introduction</h2>
+
+<p>Conventional programming languages provide deterministic control flow: <code>if (x&nbsp;>&nbsp;5)</code> evaluates to exactly <em>true</em> or <em>false</em>. The branch condition is a predicate over values. This paper introduces SML, a language where the fundamental branching primitive is a predicate over <em>statistical surprise</em> — the degree to which an observed state deviates from a learned model of normal behavior.</p>
+
+<p>The key insight is that many real-world monitoring, control, and decision systems do not have crisp boundaries. "Is this CPU load anomalous?" is not a question about a threshold; it is a question about context. 85% CPU at 2pm on a Monday is normal for a build server. 85% CPU at 3am on Sunday is not. The answer depends on the <em>history</em> of observations and the <em>expectations</em> the system has formed. SML makes this dependence explicit in the language semantics.</p>
+
+<p>SML introduces three language-level novelties:</p>
+
+<p><strong>Surprise as control flow.</strong> The expression <code>surprise(M)</code> evaluates to a non-negative real number representing the negative log-probability of the current observation under model <em>M</em>'s learned distribution. The <code>when surprise(M) > k</code> construct branches based on this value. Unlike a traditional conditional, the same observation may trigger the branch today but not next week, because the model's expectations evolve.</p>
+
+<p><strong>Runtime self-modification via <code>train</code>.</strong> The statement <code>train(M, weight=high)</code> instructs the runtime to incorporate the current observation into model <em>M</em>'s training data with elevated importance. This modifies the model's weights, which in turn modifies the surprise landscape, which in turn modifies which branches execute. The program's source code is unchanged, but its execution paths shift. We formalize this as a transition over a <em>weight space</em> that is part of the runtime state.</p>
+
+<p><strong>Token types with distributional semantics.</strong> In SML, <code>token CPU</code> is not an integer or an enum. It is a member of a vocabulary with an induced distance metric: <code>C5</code> is closer to <code>C6</code> than to <code>C1</code>. This distance is derived from the embedding space of the underlying model. The type system tracks this: operations that assume equality semantics (pattern matching on exact token values) are typed differently from operations that use distributional semantics (surprise computation over token sequences).</p>
+
+<p>This paper provides the formal foundations. Section 2 introduces the core concepts informally. Section 3 gives the abstract syntax. Section 4 defines the type system. Section 5 gives the operational semantics. Section 6 states and sketches proofs for key properties. Sections 7-9 discuss compilation, related work, and open questions.</p>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 2. CORE CONCEPTS -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s2"><span class="num">2</span> Core Concepts</h2>
+
+<h3 id="s3"><span class="num">2.1</span> Signals, Tokens, and Vocabularies</h3>
+
+<div class="definition">
+  <span class="label">Definition 2.1 — Signal</span>
+  A <em>signal</em> is a named, typed data source that produces values at discrete time steps. Formally, a signal <em>s</em> is a function <em>s</em> : <em>T</em> → <em>V</em>, where <em>T</em> = ℕ is the set of time steps and <em>V</em> is the value domain (typically ℝ for continuous signals or a finite set for categorical signals). A signal has a <em>source specification</em> — an opaque string identifying where the value comes from (a shell command, a sensor address, a remote device).
+</div>
+
+<div class="definition">
+  <span class="label">Definition 2.2 — Quantization Function</span>
+  A quantization function <em>Q</em> : <em>V</em> → <em>K</em> maps continuous signal values to a finite set of discrete tokens <em>K</em> = {<em>k</em>₀, <em>k</em>₁, ..., <em>k</em><sub>n-1</sub>}. For a signal with range [<em>a</em>, <em>b</em>] and <em>n</em> buckets, the default quantization is uniform:
+</div>
+
+<div class="math">
+Q(v) = k<sub>i</sub>  where  i = min(⌊n · (v − a) / (b − a)⌋, n − 1)
+</div>
+
+<div class="definition">
+  <span class="label">Definition 2.3 — Vocabulary</span>
+  A vocabulary <em>V</em> is a finite set of tokens with:
+  <br>(i) A <em>token set</em> <em>K</em> = <em>K</em>₁ ∪ <em>K</em>₂ ∪ ... ∪ <em>K</em><sub>m</sub> ∪ {BOS, PAD}, the union of token sets from <em>m</em> signals plus special tokens.
+  <br>(ii) An <em>encoding</em> <em>enc</em> : <em>K</em> → ℕ mapping tokens to integer indices.
+  <br>(iii) An <em>embedding</em> <em>emb</em> : <em>K</em> → ℝ<sup>d</sup> mapping tokens to <em>d</em>-dimensional vectors, induced by training.
+  <br>The embedding induces a distance metric on tokens: <em>d</em>(<em>k</em><sub>i</sub>, <em>k</em><sub>j</sub>) = ‖<em>emb</em>(<em>k</em><sub>i</sub>) − <em>emb</em>(<em>k</em><sub>j</sub>)‖₂.
+</div>
+
+<p>The embedding distance is what makes SML's type system non-trivial. When a model predicts token <code>C5</code> and observes <code>C6</code>, the surprise is low because these tokens are nearby in embedding space. If it observes <code>C1</code>, surprise is high. This distance is <em>learned</em>, not declared — it emerges from the model's training and may change as the model retrains.</p>
+
+<h3 id="s4"><span class="num">2.2</span> Flows and State Models</h3>
+
+<div class="definition">
+  <span class="label">Definition 2.4 — Observation</span>
+  An observation <em>o</em><sub>t</sub> at time <em>t</em> is an ordered sequence of tokens produced by applying the quantization function to each signal in a vocabulary: <em>o</em><sub>t</sub> = (BOS, Q₁(s₁(t)), Q₂(s₂(t)), ..., Q<sub>m</sub>(s<sub>m</sub>(t))).
+</div>
+
+<div class="definition">
+  <span class="label">Definition 2.5 — State Model</span>
+  A state model <em>M</em> = (<em>V</em>, <em>θ</em>, <em>w</em>, <em>ℓ</em>) consists of:
+  <br>(i) A vocabulary <em>V</em>.
+  <br>(ii) Model parameters <em>θ</em> ∈ ℝ<sup>p</sup> (the transformer weights).
+  <br>(iii) A context window size <em>w</em> ∈ ℕ.
+  <br>(iv) A collection interval <em>ℓ</em> ∈ ℝ<sup>+</sup> (seconds between observations).
+  <br>The model defines a conditional probability distribution: <em>P</em><sub>θ</sub>(<em>k</em><sub>t+1</sub> | <em>k</em><sub>t−w+1</sub>, ..., <em>k</em><sub>t</sub>) for each token position, via a decoder-only transformer with parameters <em>θ</em>.
+</div>
+
+<h3 id="s5"><span class="num">2.3</span> Surprise and Drift</h3>
+
+<div class="definition">
+  <span class="label">Definition 2.6 — Surprise</span>
+  The surprise of observation <em>o</em><sub>t</sub> under model <em>M</em> is:
+</div>
+
+<div class="math">
+S(o<sub>t</sub>, M) = − (1/|o<sub>t</sub>|) · Σ<sub>i</sub> log P<sub>θ</sub>(o<sub>t</sub>[i] | context<sub>i</sub>)
+
+<span class="comment">where context<sub>i</sub> is the preceding tokens up to position i within the window</span>
+</div>
+
+<p>Surprise is always non-negative (since probabilities ≤ 1). A surprise of 0 means the model predicted the observation with certainty. Higher values indicate greater deviation from expectation. The per-token averaging normalizes across observations of different lengths.</p>
+
+<div class="definition">
+  <span class="label">Definition 2.7 — Drift</span>
+  Drift over a window of <em>n</em> observations is the trend in surprise:
+</div>
+
+<div class="math">
+D(M, n) = (1/n) · Σ<sub>j=t−n+1</sub><sup>t</sup> S(o<sub>j</sub>, M) − (1/n) · Σ<sub>j=t−2n+1</sub><sup>t−n</sup> S(o<sub>j</sub>, M)
+
+<span class="comment">positive drift = things are getting stranger; negative drift = model is adapting</span>
+</div>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 3. ABSTRACT SYNTAX -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s6"><span class="num">3</span> Abstract Syntax</h2>
+
+<p>We define the abstract syntax of SML using a BNF-like grammar. Terminal symbols are in <code>monospace</code>. Non-terminals are in <em>italics</em>.</p>
+
+<div class="math">
+<em>program</em>     ::= <em>decl</em>*
+
+<em>decl</em>        ::= <em>sig_decl</em> | <em>vocab_decl</em> | <em>model_decl</em> | <em>reaction_decl</em>
+
+<span class="comment">── Signals ──</span>
+<em>sig_decl</em>    ::= <code>signal</code> <em>name</em> <code>from</code> <em>source_str</em>
+              |  <code>remote signal</code> <em>name</em> <code>from</code> <em>source_str</em>
+
+<span class="comment">── Vocabularies ──</span>
+<em>vocab_decl</em>  ::= <code>vocab</code> <em>name</em> <code>{</code> <em>token_decl</em>* <code>}</code>
+<em>token_decl</em>  ::= <code>token</code> <em>name</em> <code>{</code>
+                    <code>input:</code> <em>signal_ref</em>
+                    <em>quant_spec</em>
+                <code>}</code>
+<em>quant_spec</em>  ::= <code>buckets:</code> <code>[</code><em>range</em><code>]</code> <code>step</code> <em>int</em>
+              |  <code>buckets:</code> <code>[</code><em>int_list</em><code>]</code>
+              |  <code>map:</code> <code>{</code> <em>map_entry</em>* <code>}</code>
+
+<span class="comment">── Models ──</span>
+<em>model_decl</em>  ::= <code>model</code> <em>name</em> <code>{</code>
+                    <code>observe:</code> <code>[</code><em>token_ref_list</em><code>]</code>
+                    <code>window:</code> <em>int</em> <code>steps</code>
+                    <code>interval:</code> <em>duration</em>
+                <code>}</code>
+
+<span class="comment">── Reactions ──</span>
+<em>reaction_decl</em> ::= <code>reaction</code> <em>name</em> <code>{</code> <em>handler</em>* <code>}</code>
+<em>handler</em>       ::= <code>on next</code> <em>model_ref</em> <code>:</code> <em>stmt</em>*
+                 |  <code>when</code> <em>surprise_expr</em> <code>{</code> <em>branch</em>* <code>}</code>
+                 |  <code>on drift</code> <em>model_ref</em> <code>{</code> <em>drift_branch</em>* <code>}</code>
+<em>branch</em>        ::= <code>if</code> <em>condition</em> <code>{</code> <em>stmt</em>* <code>}</code>
+                 |  <code>else if</code> <em>condition</em> <code>{</code> <em>stmt</em>* <code>}</code>
+                 |  <code>else</code> <code>{</code> <em>stmt</em>* <code>}</code>
+<em>drift_branch</em>  ::= <code>at surprise ></code> <em>float</em> <code>→</code> <em>stmt</em>*
+
+<span class="comment">── Statements ──</span>
+<em>stmt</em>         ::= <code>log(</code><em>expr</em><code>)</code>
+              |  <code>alert(</code><em>expr</em><code>)</code>
+              |  <code>print(</code><em>expr</em><code>)</code>
+              |  <code>train(</code><em>model_ref</em> [<code>, weight=</code><em>level</em>]<code>)</code>
+              |  <em>name</em> <code>=</code> <em>expr</em>
+
+<span class="comment">── Expressions ──</span>
+<em>expr</em>         ::= <em>literal</em> | <em>name</em> | <em>expr</em> <code>+</code> <em>expr</em> | <code>surprise(</code><em>model_ref</em><code>)</code>
+              |  <em>model_ref</em><code>.</code><em>vocab_ref</em><code>.</code><em>token_ref</em>
+              |  <em>model_ref</em><code>.last_token</code>
+<em>surprise_expr</em> ::= <code>surprise(</code><em>model_ref</em><code>) ></code> <em>float</em>
+
+<span class="comment">── Conditions ──</span>
+<em>condition</em>    ::= <em>token_ref</em> <code>is</code> <em>level</em>
+              |  <em>condition</em> <code>and</code> <em>condition</em>
+              |  <em>condition</em> <code>or</code> <em>condition</em>
+<em>level</em>        ::= <code>low</code> | <code>medium</code> | <code>high</code> | <code>critical</code>
+              |  <em>token_name</em>
+</div>
+
+<div class="remark">
+  <span class="label">Remark 3.1</span>
+  The <code>is</code> operator performs distributional comparison, not equality. <code>CPU is high</code> evaluates to true if the current CPU token falls in the upper quartile of the vocabulary's token range. This is syntactic sugar: <code>CPU is high</code> desugars to <code>enc(CPU.current) ≥ 0.75 · |K<sub>CPU</sub>|</code>.
+</div>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 4. TYPE SYSTEM -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s7"><span class="num">4</span> Type System</h2>
+
+<h3 id="s8"><span class="num">4.1</span> Token Types as Distributions</h3>
+
+<p>SML's type system distinguishes between three categories of types:</p>
+
+<table>
+  <tr><th>Type</th><th>Semantics</th><th>Operations</th></tr>
+  <tr><td><code>Signal</code></td><td>Raw continuous value from source</td><td>Read-only; input to quantization</td></tr>
+  <tr><td><code>Token&lt;V&gt;</code></td><td>Discrete member of vocabulary <em>V</em> with distributional distance</td><td><code>is</code>, embedding distance, surprise contribution</td></tr>
+  <tr><td><code>Score</code></td><td>Non-negative real (surprise value)</td><td>Comparison (<code>&gt;</code>, <code>&lt;</code>), arithmetic</td></tr>
+  <tr><td><code>Model&lt;V,w&gt;</code></td><td>State model over vocabulary <em>V</em> with window <em>w</em></td><td><code>surprise()</code>, <code>train()</code></td></tr>
+  <tr><td><code>Reaction</code></td><td>Event handler bound to a model</td><td>Dispatch on <code>next</code>, <code>when</code>, <code>drift</code></td></tr>
+</table>
+
+<div class="definition">
+  <span class="label">Definition 4.1 — Token Type</span>
+  <code>Token&lt;V&gt;</code> is parameterized by its vocabulary <em>V</em>. Two tokens are <em>type-compatible</em> if and only if they belong to the same vocabulary. Cross-vocabulary token comparison is a type error. The <code>is</code> operator is defined only on <code>Token</code> types, and returns <code>Bool</code>. Importantly, <code>Token</code> does <em>not</em> support equality (<code>==</code>) by default — the canonical comparison is distributional (<code>is</code>), which computes whether the token falls in a named region of its range.
+</div>
+
+<h3 id="s9"><span class="num">4.2</span> Typing Rules</h3>
+
+<div class="math">
+<span class="comment">── T-SIGNAL: Signal declaration introduces a Signal type ──</span>
+─────────────────────────────────────────
+Γ ⊢ (<code>signal</code> x <code>from</code> src) : Γ, x : Signal
+
+<span class="comment">── T-TOKEN: Token declaration introduces a Token type bound to a vocabulary ──</span>
+Γ ⊢ s : Signal     Q is a valid quantization over s
+──────────────────────────────────────────────────────
+Γ ⊢ (<code>token</code> x { input: s, Q }) : Γ, x : Token&lt;V&gt;
+
+<span class="comment">── T-SURPRISE: surprise() takes a Model, returns Score ──</span>
+Γ ⊢ M : Model&lt;V, w&gt;
+──────────────────────────────
+Γ ⊢ surprise(M) : Score
+
+<span class="comment">── T-TRAIN: train() takes a Model, returns Unit; has side effect on θ ──</span>
+Γ ⊢ M : Model&lt;V, w&gt;
+──────────────────────────────
+Γ ⊢ train(M) : Unit  [effect: mutate θ<sub>M</sub>]
+
+<span class="comment">── T-IS: the distributional comparison operator ──</span>
+Γ ⊢ k : Token&lt;V&gt;     level ∈ {low, medium, high, critical}
+─────────────────────────────────────────────────────────────
+Γ ⊢ (k <code>is</code> level) : Bool
+
+<span class="comment">── T-WHEN: surprise guard requires Score comparison ──</span>
+Γ ⊢ surprise(M) : Score     c ∈ ℝ⁺
+─────────────────────────────────────────
+Γ ⊢ (<code>when</code> surprise(M) > c { ... }) : Reaction
+</div>
+
+<h3 id="s10"><span class="num">4.3</span> Type Soundness</h3>
+
+<div class="theorem">
+  <span class="label">Theorem 4.1 — Type Soundness (Progress + Preservation)</span>
+  <p><strong>Progress:</strong> If Γ ⊢ <em>e</em> : <em>τ</em> and the runtime state <em>σ</em> is well-formed, then either <em>e</em> is a value or there exists <em>e'</em> such that (<em>e</em>, <em>σ</em>) → (<em>e'</em>, <em>σ'</em>).</p>
+  <p><strong>Preservation:</strong> If Γ ⊢ <em>e</em> : <em>τ</em> and (<em>e</em>, <em>σ</em>) → (<em>e'</em>, <em>σ'</em>), then Γ ⊢ <em>e'</em> : <em>τ</em>.</p>
+  <p><em>Note:</em> The <code>train</code> statement mutates <em>σ</em> (specifically θ<sub>M</sub>), but does not change the type of any expression. The type system is sound over the <em>syntactic</em> structure; the <em>semantic</em> behavior (which branches execute) depends on σ.</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 5. OPERATIONAL SEMANTICS -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s11"><span class="num">5</span> Operational Semantics</h2>
+
+<h3 id="s12"><span class="num">5.1</span> Runtime State</h3>
+
+<div class="definition">
+  <span class="label">Definition 5.1 — Runtime State</span>
+  The runtime state <em>σ</em> = (<em>Θ</em>, <em>H</em>, <em>B</em>, <em>t</em>) consists of:
+  <br>(i) <em>Θ</em> : a mapping from model names to parameter vectors. Θ(<em>M</em>) = θ<sub>M</sub> ∈ ℝ<sup>p</sup>.
+  <br>(ii) <em>H</em> : a mapping from model names to observation histories. H(<em>M</em>) = (o<sub>1</sub>, o<sub>2</sub>, ..., o<sub>t</sub>).
+  <br>(iii) <em>B</em> : a mapping from model names to training buffers. B(<em>M</em>) accumulates observations marked for retraining.
+  <br>(iv) <em>t</em> ∈ ℕ : the global time step.
+</div>
+
+<p>The key distinction from conventional language runtimes: <em>σ</em> contains model weights as mutable state. An SML program's execution path at time <em>t</em> depends on Θ(<em>M</em>), which may differ from its value at time <em>t</em> − 1 due to <code>train</code> statements.</p>
+
+<h3 id="s13"><span class="num">5.2</span> Signal Collection</h3>
+
+<div class="math">
+<span class="comment">── E-COLLECT: At each tick, signals are sampled and quantized ──</span>
+
+        ∀ s<sub>i</sub> ∈ observe(M) : v<sub>i</sub> = s<sub>i</sub>(t),  k<sub>i</sub> = Q<sub>i</sub>(v<sub>i</sub>)
+        o<sub>t</sub> = (BOS, k₁, k₂, ..., k<sub>m</sub>)
+─────────────────────────────────────────────────────────────
+(σ, t) →<sub>collect</sub> (σ[H(M) ← H(M) · o<sub>t</sub>], t)
+
+<span class="comment">For remote signals, the rule is identical except v<sub>i</sub> = receive(s<sub>i</sub>, t)</span>
+<span class="comment">with a freshness check: if age(v<sub>i</sub>) > 2 · interval(M), signal is stale</span>
+</div>
+
+<h3 id="s14"><span class="num">5.3</span> Surprise Evaluation</h3>
+
+<div class="math">
+<span class="comment">── E-SURPRISE: Evaluate surprise for current observation ──</span>
+
+        ctx = last w tokens from H(M)
+        o<sub>t</sub> = latest observation in H(M)
+        ∀ i ∈ 1..|o<sub>t</sub>| :
+            p<sub>i</sub> = P<sub>Θ(M)</sub>(o<sub>t</sub>[i] | ctx<sub>1..i-1</sub>)    <span class="comment">// forward pass through transformer</span>
+            s<sub>i</sub> = −log(p<sub>i</sub>)
+        S = (1 / |o<sub>t</sub>|) · Σ<sub>i</sub> s<sub>i</sub>
+─────────────────────────────────────────────────────────────
+(surprise(M), σ) →<sub>eval</sub> (S, σ)
+</div>
+
+<div class="remark">
+  <span class="label">Remark 5.1 — Computational Cost</span>
+  Each <code>surprise(M)</code> evaluation requires one forward pass through the transformer. For a model with <em>p</em> parameters and context window <em>w</em>, this is O(<em>w</em>² · <em>d</em>) where <em>d</em> is the embedding dimension. For micro-transformers (<em>p</em> < 30K, <em>w</em> = 16, <em>d</em> = 32), this is approximately 16,000 multiply-add operations — under 1ms on any modern processor.
+</div>
+
+<h3 id="s15"><span class="num">5.4</span> The Train Rule</h3>
+
+<p>This is the most unusual semantic rule. <code>train(M)</code> modifies the model weights in-place.</p>
+
+<div class="math">
+<span class="comment">── E-TRAIN: Incorporate current observation into model ──</span>
+
+        o<sub>t</sub> = latest observation in H(M)
+        B'(M) = B(M) ∪ {(o<sub>t</sub>, weight)}
+        <span class="comment">// If buffer exceeds retrain threshold:</span>
+        if |B'(M)| ≥ retrain_threshold:
+            θ'<sub>M</sub> = Adam(Θ(M), L, B'(M), steps)
+            <span class="comment">// where L = cross-entropy loss over next-token prediction</span>
+            σ' = σ[Θ(M) ← θ'<sub>M</sub>, B(M) ← ∅]
+        else:
+            σ' = σ[B(M) ← B'(M)]
+─────────────────────────────────────────────────────────────
+(train(M, weight), σ) →<sub>train</sub> (unit, σ')
+</div>
+
+<div class="definition">
+  <span class="label">Definition 5.2 — Weight Levels</span>
+  The <code>weight</code> parameter controls how many copies of the observation are added to the training buffer:
+  <code>low</code> = 1, <code>medium</code> = 3, <code>high</code> = 10, <code>critical</code> = 30.
+  This implements importance sampling: observations the programmer deems significant contribute more to the gradient during retraining.
+</div>
+
+<div class="example">
+  <span class="label">Example 5.1 — Self-Modifying Execution</span>
+  <p>Consider a reaction that alerts on Monday morning CPU spikes and then calls <code>train(M, weight=high)</code>. The execution trace over two weeks:</p>
+  <p><strong>Week 1, Monday 9am:</strong> CPU spikes to 80%. surprise(M) = 4.2 > 2.0. Branch fires. Alert sent. <code>train(M, weight=high)</code> adds 10 copies of this observation to the buffer. Retraining runs.</p>
+  <p><strong>Week 2, Monday 9am:</strong> CPU spikes to 80% again. But now Θ(M) has been updated — the model has seen this pattern. surprise(M) = 1.3 < 2.0. Branch does <em>not</em> fire. Same code, different behavior.</p>
+  <p>The source code is identical across both weeks. The execution path diverged because σ changed — specifically, Θ(M) was modified by the <code>train</code> side effect.</p>
+</div>
+
+<h3 id="s16"><span class="num">5.5</span> Reaction Dispatch</h3>
+
+<div class="math">
+<span class="comment">── E-REACTION: Full tick cycle ──</span>
+
+1. (σ, t)  →<sub>collect</sub>   (σ₁, t)        <span class="comment">// sample signals, quantize</span>
+2. (σ₁)    →<sub>eval</sub>      S = surprise(M) <span class="comment">// forward pass</span>
+3. if S > threshold:                      <span class="comment">// surprise guard</span>
+     evaluate branches top-to-bottom      <span class="comment">// first matching branch executes</span>
+     execute matched statement block       <span class="comment">// may include train()</span>
+4. (σ₂, t) → (σ₂, t+1)                  <span class="comment">// advance clock</span>
+
+<span class="comment">── E-DRIFT: Graduated response dispatch ──</span>
+
+<code>on drift</code>(M) {
+  <code>at surprise ></code> k₁ → stmt₁    <span class="comment">// evaluated in order, ALL matching fire</span>
+  <code>at surprise ></code> k₂ → stmt₂    <span class="comment">// unlike when{}, drift branches accumulate</span>
+  <code>at surprise ></code> k₃ → stmt₃
+}
+
+<span class="comment">If S = 3.5 and k₁=1.5, k₂=2.0, k₃=3.0: all three branches fire.</span>
+<span class="comment">This enables graduated response: log, then investigate, then alert.</span>
+</div>
+
+<div class="remark">
+  <span class="label">Remark 5.2 — when vs. on drift</span>
+  <code>when surprise(M) > k { ... }</code> is a gate: exactly one branch fires (first match). <code>on drift(M) { at surprise > k₁ → ... }</code> is a cascade: all matching thresholds fire. The gate is for branching logic. The cascade is for graduated response. This distinction addresses a concern raised during KIRI's development: a single hard threshold for anomaly response is itself a deterministic cliff in an otherwise probabilistic language.
+</div>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 6. PROPERTIES -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s17"><span class="num">6</span> Properties</h2>
+
+<h3 id="s18"><span class="num">6.1</span> Monotonic Adaptation</h3>
+
+<div class="theorem">
+  <span class="label">Theorem 6.1 — Adaptation Direction</span>
+  Let <em>o</em> be an observation, <em>M</em> be a model, and <code>train(M)</code> be executed with <em>o</em> in the buffer. Let θ and θ' be the weights before and after retraining. Then:
+  <br><br>S(<em>o</em>, M[θ']) ≤ S(<em>o</em>, M[θ])
+  <br><br>In words: retraining on an observation can only decrease (or maintain) the surprise of that observation in future evaluations.
+</div>
+
+<p><em>Proof sketch.</em> The retraining step minimizes cross-entropy loss over the buffer, which includes <em>o</em> (possibly with multiplicity from the weight parameter). Since cross-entropy loss at a specific token is exactly the negative log-probability (which is surprise), minimizing the loss over a set containing <em>o</em> necessarily decreases or maintains the surprise of <em>o</em>. ∎</p>
+
+<p>This property is what makes <code>train</code> semantically meaningful as a language primitive: it is <em>directional</em>. Calling <code>train</code> on an observation makes that observation more normal. The programmer can reason about this without knowing the internal structure of the model.</p>
+
+<h3 id="s19"><span class="num">6.2</span> Convergence</h3>
+
+<div class="theorem">
+  <span class="label">Theorem 6.2 — Eventual Silence</span>
+  Let <em>R</em> be a reaction with guard <code>when surprise(M) > k</code> and body containing <code>train(M)</code>. Let (o<sub>1</sub>, o<sub>2</sub>, ...) be a stationary sequence of observations drawn i.i.d. from distribution <em>D</em>. Then:
+  <br><br>∃ N such that ∀ t > N : the guard evaluates to false for o<sub>t</sub> with probability ≥ 1 − ε.
+  <br><br>In words: if the same kind of event keeps happening, the reaction eventually stops firing on it.
+</div>
+
+<p><em>Proof sketch.</em> By Theorem 6.1, each firing of the reaction adds the triggering observation to the training buffer, which after retraining decreases its surprise. Since the observations are stationary and the model has finite capacity, the surprise over the support of <em>D</em> converges to a fixed point of the training dynamics. If this fixed point is below <em>k</em> for the typical observations from <em>D</em>, the guard stops triggering. The rate depends on the learning rate, weight parameter, and model capacity, but convergence is guaranteed under standard assumptions on the optimizer (Adam with decaying learning rate). ∎</p>
+
+<div class="remark">
+  <span class="label">Remark 6.1 — The Self-Healing Property</span>
+  Theorem 6.2 is the formal statement of what we informally call "self-healing." A program that alerts on Monday morning CPU spikes and retrains on them will eventually stop alerting — not because the spikes stopped, but because the model learned that spikes are normal on Monday mornings. The program adapted without any code change. This is the core semantic contribution of SML: execution paths are functions of learned expectations, not static predicates.
+</div>
+
+<h3 id="s20"><span class="num">6.3</span> Determinism Modulo Weights</h3>
+
+<div class="theorem">
+  <span class="label">Theorem 6.3 — Conditional Determinism</span>
+  For a fixed runtime state σ = (Θ, H, B, t), the evaluation of any SML expression is deterministic. Non-determinism in SML arises exclusively from: (i) the stochastic content of signal reads, (ii) the stochastic nature of gradient-based training. Given identical signals and identical random seeds for the optimizer, two executions of the same SML program produce identical traces.
+</div>
+
+<p>This property is important for debugging: if you fix the weights (freeze the model), an SML program behaves like a conventional deterministic program. The probabilistic control flow is not random — it is <em>learned determinism</em> over a mutable parameter space.</p>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 7. COMPILATION -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s21"><span class="num">7</span> Compilation</h2>
+
+<p>SML transpiles to two targets:</p>
+
+<table>
+  <tr><th>Target</th><th>Host (Python/PyTorch)</th><th>Edge (C/TFLite Micro)</th></tr>
+  <tr><td><code>signal</code> decl</td><td>subprocess call or socket listener</td><td>GPIO read / sensor driver call</td></tr>
+  <tr><td><code>vocab</code> / <code>token</code></td><td>StateLanguage object (lookup table)</td><td><code>static const int bucket_map[]</code></td></tr>
+  <tr><td><code>model</code></td><td>PyTorch nn.Module (or pure Python Atom)</td><td>TFLite Micro interpreter with quantized weights</td></tr>
+  <tr><td><code>surprise()</code></td><td>Forward pass + neg-log-prob averaging</td><td>INT8 forward pass + fixed-point log</td></tr>
+  <tr><td><code>train()</code></td><td>Adam optimizer step on buffer</td><td><em>Not available</em> — edge devices don't train</td></tr>
+  <tr><td><code>remote signal</code></td><td>UDP listener on specified port</td><td>UDP/ESP-NOW broadcast of token index</td></tr>
+  <tr><td><code>when</code> / <code>on drift</code></td><td>Python if/elif chain</td><td>C if/else chain</td></tr>
+</table>
+
+<div class="remark">
+  <span class="label">Remark 7.1 — The Remote Signal Protocol</span>
+  When the compiler encounters <code>remote signal x from "esp32-01:dht22_temp"</code>, it generates two artifacts: (1) a C firmware blob for the ESP32 that reads the DHT22 sensor, applies the quantization function, and broadcasts the resulting token index as a 2-byte UDP packet every <em>ℓ</em> seconds; (2) a UDP listener in the host runtime that maps the received index back to the token. The programmer sees <code>x</code> as a local variable. The network protocol is abstracted away entirely.
+</div>
+
+<div class="remark">
+  <span class="label">Remark 7.2 — Edge Devices Cannot Train</span>
+  The <code>train()</code> statement is unavailable on edge targets. This is a deliberate design constraint: training requires backpropagation, which requires the full computation graph in memory, which exceeds the capacity of microcontrollers. Edge devices can <em>infer</em> (run the forward pass, compute surprise) but cannot <em>adapt</em>. Adaptation happens at the host, which periodically pushes updated weights to edge devices. This is formalized as a <em>weight synchronization</em> step that is outside the SML language itself.
+</div>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 8. RELATION TO EXISTING WORK -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s22"><span class="num">8</span> Relation to Existing Work</h2>
+
+<p><strong>Probabilistic programming languages</strong> (Stan, Pyro, Edward, Gen) allow programmers to specify probabilistic models and perform inference. SML differs fundamentally: it is not a language for specifying generative models. It is a language for writing <em>reactive programs</em> whose control flow depends on learned distributional expectations. SML programs do not define distributions; they react to surprise relative to distributions learned from data.</p>
+
+<p><strong>Stream processing languages</strong> (CQL, Esper, Flink SQL) provide SQL-like queries over data streams with windowing and aggregation. SML shares the stream-oriented execution model but replaces aggregation functions with learned model inference. Where Flink might compute <code>AVG(cpu) OVER (LAST 10 MINUTES)</code> and compare to a threshold, SML computes <code>surprise(M)</code> which implicitly captures multivariate, nonlinear, temporal patterns.</p>
+
+<p><strong>Control theory / PID</strong> uses Proportional-Integral-Derivative controllers with fixed setpoints. SML's <em>Perception-Attention-Behavior</em> loop is analogous but with a learned, evolving setpoint: the model's expectation replaces the fixed reference value, attention (the transformer's mechanism) replaces the derivative term, and the <code>train</code> statement replaces manual setpoint adjustment.</p>
+
+<p><strong>Karpathy's Software 2.0 thesis</strong> proposes that neural networks are a new kind of software where the weights are the program. SML takes this literally and provides a programming language whose semantics are defined over a <em>weight space</em> as part of the runtime state — making the thesis a formal language construct rather than a metaphor.</p>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 9. OPEN QUESTIONS -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s23"><span class="num">9</span> Open Questions</h2>
+
+<p><strong>Composability of surprise.</strong> When multiple models are observed simultaneously (<code>when surprise(M₁) + surprise(M₂) > k</code>), the combined surprise is not simply additive if the models share latent structure. The formal semantics of multi-model surprise composition — and whether there exists an optimal composition function — is an open question that the KIRI benchmark is designed to address empirically.</p>
+
+<p><strong>Termination and liveness.</strong> An SML program with <code>train()</code> in every reaction body will eventually suppress all reactions (Theorem 6.2). Is this desirable? Should SML provide a <code>forget</code> primitive that increases surprise by removing observations from the training buffer? This would allow the programmer to express "stop adapting to this" — preventing the model from normalizing genuinely dangerous patterns.</p>
+
+<p><strong>Formal verification.</strong> Can we verify properties of SML programs statically? For example: "this reaction will fire at most N times on any stationary input sequence" or "this composition of models detects all anomalies of class C." The dependence on learned weights makes static analysis challenging, but bounds based on model capacity and learning rate schedules may be possible.</p>
+
+<p><strong>Debugging.</strong> When an SML program behaves unexpectedly, is the bug in the code or the weights? SML needs a debugger that can: (a) freeze weights and step through deterministically, (b) show the surprise landscape over the token space, (c) identify which training observations caused a particular weight configuration. The KIRI monitor dashboard is a prototype of this, but a formal debugging semantics is needed.</p>
+
+<p><strong>Concurrency.</strong> Multiple reactions observing the same model run sequentially in the current semantics. If two reactions both call <code>train(M)</code>, the order matters. A concurrent SML would need to define a memory model for weight updates — similar to how Java defines a memory model for shared mutable state, but over a continuous parameter space.</p>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- FOOTER -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="footnote">
+  <p><strong>Reference Implementation:</strong> KIRI — <a href="https://github.com/EngEryx/kiri">github.com/EngEryx/kiri</a> — implements the runtime semantics of SML using micro-transformers (27,840 parameters) on quantized system telemetry. The SML transpiler is planned as a future layer on top of the proven KIRI runtime.</p>
+  <p><strong>Acknowledgments:</strong> The core concepts in SML were developed through iterative refinement. The microgpt foundation is due to Andrej Karpathy. The PAB (Perception-Attention-Behavior) framing emerged from comparison with classical PID control theory.</p>
+  <p style="margin-top:24px; font-size:13px; color:#999;">SML Formal Semantics v0.1 — Working Draft — February 2026 — Eryx Labs</p>
+</div>
+
+</div>
+</body>
+</html>
