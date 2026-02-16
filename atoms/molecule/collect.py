@@ -32,6 +32,18 @@ def _gen_pulse(scenario):
         return {'p.C': random.gauss(30, 15), 'p.M': random.gauss(45, 15),
                 'p.D': random.gauss(50, 15), 'p.S': random.gauss(10, 10),
                 'p.L': random.gauss(3, 2), 'p.N': 0}
+    elif scenario == 'normal_busy':
+        return {'p.C': random.gauss(55, 12), 'p.M': random.gauss(60, 12),
+                'p.D': random.gauss(50, 10), 'p.S': random.gauss(20, 10),
+                'p.L': random.gauss(5, 2), 'p.N': 1}
+    elif scenario == 'suppress_routine':
+        return {'p.C': random.gauss(45, 12), 'p.M': random.gauss(55, 12),
+                'p.D': random.gauss(50, 10), 'p.S': random.gauss(15, 8),
+                'p.L': random.gauss(4, 2), 'p.N': 1}
+    elif scenario == 'retrain_novel':
+        return {'p.C': random.gauss(40, 15), 'p.M': random.gauss(50, 15),
+                'p.D': random.gauss(50, 15), 'p.S': random.gauss(20, 12),
+                'p.L': random.gauss(5, 3), 'p.N': 1}
     else:
         return {'p.C': random.gauss(25, 12), 'p.M': random.gauss(40, 12),
                 'p.D': random.gauss(45, 10), 'p.S': random.gauss(10, 8),
@@ -43,7 +55,10 @@ def _gen_rhythm(scenario, hour):
     if scenario == 'night_activity':
         return {'r.I': random.gauss(100, 60), 'r.A': random.gauss(35, 10),
                 'r.H': hour, 'r.W': random.randint(0, 6)}
-    elif scenario in ('normal', 'suppress_known'):
+    elif scenario == 'normal_idle':
+        return {'r.I': random.gauss(1200, 400), 'r.A': random.gauss(3, 2),
+                'r.H': hour, 'r.W': random.randint(0, 4)}
+    elif scenario in ('normal', 'normal_busy', 'suppress_known', 'suppress_routine'):
         return {'r.I': random.gauss(300, 200), 'r.A': random.gauss(15, 8),
                 'r.H': hour, 'r.W': random.randint(0, 4)}
     else:
@@ -57,9 +72,13 @@ def _gen_drift(scenario):
         return {'d.T': random.randint(6, 15), 'd.C': random.randint(0, 2),
                 'd.S': random.randint(4, 9), 'd.H': random.randint(8, 18),
                 'd.W': random.randint(0, 2)}
-    elif scenario == 'retrain_signal':
+    elif scenario in ('retrain_signal', 'retrain_novel'):
         return {'d.T': random.randint(3, 8), 'd.C': random.randint(1, 4),
                 'd.S': random.randint(2, 5), 'd.H': random.randint(8, 18),
+                'd.W': random.randint(0, 4)}
+    elif scenario == 'normal_idle':
+        return {'d.T': random.randint(0, 1), 'd.C': random.randint(0, 1),
+                'd.S': 0, 'd.H': random.randint(8, 18),
                 'd.W': random.randint(0, 4)}
     else:
         return {'d.T': random.randint(1, 5), 'd.C': random.randint(1, 4),
@@ -81,8 +100,14 @@ def _gen_scores(scenario):
         return {'PS': random.gauss(5, 2), 'RS': random.gauss(1.5, 1), 'DS': random.gauss(1, 0.5)}
     elif scenario == 'retrain_signal':
         return {'PS': random.gauss(3, 1.5), 'RS': random.gauss(3, 1.5), 'DS': random.gauss(4, 1.5)}
-    elif scenario == 'suppress_known':
+    elif scenario == 'retrain_novel':
+        return {'PS': random.gauss(4, 2), 'RS': random.gauss(4, 2), 'DS': random.gauss(3, 1.5)}
+    elif scenario in ('suppress_known', 'suppress_routine'):
         return {'PS': random.gauss(4, 1.5), 'RS': random.gauss(1.5, 1), 'DS': random.gauss(1, 0.5)}
+    elif scenario == 'normal_idle':
+        return {'PS': random.gauss(0.5, 0.3), 'RS': random.gauss(0.5, 0.3), 'DS': random.gauss(0.3, 0.2)}
+    elif scenario == 'normal_busy':
+        return {'PS': random.gauss(1.8, 0.6), 'RS': random.gauss(1.2, 0.5), 'DS': random.gauss(0.8, 0.4)}
     else:
         return {'PS': random.gauss(1.2, 0.8), 'RS': random.gauss(1.0, 0.6), 'DS': random.gauss(0.8, 0.5)}
 

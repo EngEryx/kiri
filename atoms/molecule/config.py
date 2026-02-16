@@ -67,8 +67,9 @@ LANGUAGE_NAME = 'molecule'
 
 # Scenario definitions for synthetic data
 SCENARIOS = {
+    # --- ok: 70% total ---
     'normal': {
-        'weight': 0.50, 'action': 'ok',
+        'weight': 0.45, 'action': 'ok',
         'explanations': [
             ['normal', 'cpu', 'memory', 'stable'],
             ['expected', 'pattern', 'detected'],
@@ -77,8 +78,25 @@ SCENARIOS = {
             ['normal', 'pulse', 'stable'],
         ],
     },
+    'normal_idle': {
+        'weight': 0.15, 'action': 'ok',
+        'explanations': [
+            ['idle', 'resting', 'expected'],
+            ['low', 'load', 'normal', 'stable'],
+            ['normal', 'idle', 'expected', 'pattern'],
+        ],
+    },
+    'normal_busy': {
+        'weight': 0.10, 'action': 'ok',
+        'explanations': [
+            ['busy', 'but', 'expected', 'pattern'],
+            ['active', 'working', 'normal'],
+            ['elevated', 'load', 'expected', 'working'],
+        ],
+    },
+    # --- alert: 15% total ---
     'cpu_spike': {
-        'weight': 0.12, 'action': 'alert',
+        'weight': 0.05, 'action': 'alert',
         'explanations': [
             ['spike', 'cpu', 'high', 'load', 'detected'],
             ['cpu', 'high', 'elevated', 'load'],
@@ -87,7 +105,7 @@ SCENARIOS = {
         ],
     },
     'memory_pressure': {
-        'weight': 0.08, 'action': 'alert',
+        'weight': 0.03, 'action': 'alert',
         'explanations': [
             ['memory', 'high', 'swap', 'elevated'],
             ['high', 'memory', 'swap', 'detected'],
@@ -95,7 +113,7 @@ SCENARIOS = {
         ],
     },
     'night_activity': {
-        'weight': 0.08, 'action': 'alert',
+        'weight': 0.03, 'action': 'alert',
         'explanations': [
             ['unusual', 'active', 'during', 'night'],
             ['active', 'at', 'night', 'unusual'],
@@ -103,35 +121,53 @@ SCENARIOS = {
         ],
     },
     'task_overload': {
-        'weight': 0.08, 'action': 'alert',
+        'weight': 0.02, 'action': 'alert',
         'explanations': [
             ['many', 'task', 'switch', 'few', 'completed'],
             ['task', 'drift', 'many', 'switch'],
             ['high', 'task', 'switch', 'detected'],
         ],
     },
-    'suppress_known': {
-        'weight': 0.07, 'action': 'suppress',
-        'explanations': [
-            ['elevated', 'cpu', 'during', 'weekend', 'expected'],
-            ['expected', 'pattern', 'during', 'weekend'],
-            ['elevated', 'load', 'expected', 'pattern'],
-        ],
-    },
     'network_issue': {
-        'weight': 0.05, 'action': 'alert',
+        'weight': 0.02, 'action': 'alert',
         'explanations': [
             ['network', 'drop', 'detected', 'unusual'],
             ['network', 'drop', 'anomaly', 'detected'],
             ['unusual', 'network', 'pattern'],
         ],
     },
+    # --- suppress: 10% total ---
+    'suppress_known': {
+        'weight': 0.05, 'action': 'suppress',
+        'explanations': [
+            ['elevated', 'cpu', 'during', 'weekend', 'expected'],
+            ['expected', 'pattern', 'during', 'weekend'],
+            ['elevated', 'load', 'expected', 'pattern'],
+        ],
+    },
+    'suppress_routine': {
+        'weight': 0.05, 'action': 'suppress',
+        'explanations': [
+            ['elevated', 'but', 'expected', 'pattern'],
+            ['score', 'above', 'normal', 'but', 'expected'],
+            ['pattern', 'detected', 'expected', 'stable'],
+        ],
+    },
+    # --- retrain: 5% total ---
     'retrain_signal': {
-        'weight': 0.02, 'action': 'retrain',
+        'weight': 0.03, 'action': 'retrain',
         'explanations': [
             ['pattern', 'drift', 'unusual', 'score', 'above', 'normal'],
             ['unusual', 'pattern', 'drift', 'detected'],
             ['anomaly', 'score', 'elevated', 'drift'],
+        ],
+    },
+    'retrain_novel': {
+        'weight': 0.02, 'action': 'retrain',
+        'explanations': [
+            ['unusual', 'pattern', 'no', 'expected', 'score'],
+            ['anomaly', 'pattern', 'unusual', 'detected'],
+            ['score', 'elevated', 'unusual', 'pattern'],
         ],
     },
 }

@@ -240,6 +240,11 @@ class KiriState:
                 mol_obs.update({f'p.{k}': v for k, v in p_obs.items() if k != 'ts'})
             if r_obs:
                 mol_obs.update({f'r.{k}': v for k, v in r_obs.items() if k != 'ts'})
+            # Drift defaults — no live drift collection yet, use neutral values
+            mol_obs.update({
+                'd.T': 0, 'd.C': 0, 'd.S': 0,
+                'd.H': now.hour, 'd.W': now.weekday(),
+            })
             mol_obs.update({'PS': ps, 'RS': rs, 'DS': 0.0})
             mol_obs.update({'H': now.hour, 'W': now.weekday()})
             tokens = self.molecule_lang.encode_observation(mol_obs)
