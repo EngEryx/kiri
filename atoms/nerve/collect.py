@@ -45,9 +45,10 @@ def score_atoms(pulse_atom=None, rhythm_atom=None, drift_atom=None,
     }
 
 
-def log_feedback(nerve_obs, action, data_dir):
-    """Log a Nerve observation with user feedback action."""
+def log_feedback(nerve_obs, action, data_dir, source='human'):
+    """Log a Nerve observation with feedback action and source tag."""
     nerve_obs['action'] = action
+    nerve_obs['source'] = source
     data_dir = Path(data_dir)
     data_dir.mkdir(parents=True, exist_ok=True)
     day = nerve_obs['ts'][:10]

@@ -16,6 +16,14 @@ from .atoms.nerve.train import predict_action, make_nerve_language
 from .daemon.scheduler import Scheduler
 from .daemon.alerts import send_telegram
 
+import glob as _glob
+
+try:
+    from .core.molecule import Molecule, MoleculeLanguage
+    _HAS_MOLECULE = True
+except ImportError:
+    _HAS_MOLECULE = False
+
 
 def _load_atom(weights_path, lang_path):
     """Load a trained atom from disk. Returns (atom, lang) or (None, None)."""
@@ -66,8 +74,41 @@ class KiriDaemon:
             base / 'atoms/nerve/weights/nerve_lang.json',
         )
 
+        # Load molecule (optional, requires torch)
+        self.molecule = None
+        self.molecule_lang = None
+        if _HAS_MOLECULE:
+            try:
+                mol_lang_path = base / 'atoms/molecule/weights/molecule_lang.json'
+                mol_weights_path = base / 'atoms/molecule/weights/molecule_weights.pt'
+                if mol_lang_path.exists() and mol_weights_path.exists():
+                    self.molecule_lang = MoleculeLanguage.load(str(mol_lang_path))
+                    self.molecule = Molecule(self.molecule_lang)
+                    self.molecule.load_weights(str(mol_weights_path))
+            except Exception:
+                self.molecule = None
+
         loaded = sum(1 for a in [self.pulse_atom, self.rhythm_atom, self.drift_atom, self.nerve_atom] if a)
-        print(f"loaded {loaded}/4 trained atoms")
+        mol_str = " + molecule" if self.molecule else ""
+        print(f"loaded {loaded}/4 trained atoms{mol_str}")
+
+    def _latest_drift_obs(self):
+        """Read the most recent drift observation from disk."""
+        files = sorted(_glob.glob(str(Path(self.data_dir) / 'drift_*.jsonl')))
+        if not files:
+            return None
+        try:
+            last_line = None
+            with open(files[-1]) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        last_line = line
+            if last_line:
+                return json.loads(last_line)
+        except (json.JSONDecodeError, OSError):
+            pass
+        return None
 
     def _score_sequence(self, atom, obs_dict):
         """Average anomaly score for an observation through an atom."""
@@ -106,19 +147,43 @@ class KiriDaemon:
         pulse_score = self._score_sequence(self.pulse_atom, pulse_obs) if pulse_obs else 0.0
         rhythm_score = self._score_sequence(self.rhythm_atom, rhythm_obs) if rhythm_obs else 0.0
 
+        # Score latest drift observation from disk
+        drift_obs = self._latest_drift_obs()
+        drift_score = self._score_sequence(self.drift_atom, drift_obs) if drift_obs else 0.0
+
         # Nerve decision
         action = 'ok'
         if self.nerve_atom:
             nerve_obs = {
-                'P': pulse_score, 'R': rhythm_score, 'D': 0.0,
+                'P': pulse_score, 'R': rhythm_score, 'D': drift_score,
                 'H': now.hour, 'W': now.weekday(),
                 'ts': now.isoformat()
             }
             action, _ = predict_action(self.nerve_atom, nerve_obs)
-            log_feedback(nerve_obs, action, self.data_dir)
+            log_feedback(nerve_obs, action, self.data_dir, source='model')
+
+        # Molecule explanation (if available)
+        explanation = ''
+        if self.molecule and self.molecule_lang:
+            try:
+                mol_obs = {}
+                if pulse_obs:
+                    mol_obs.update({f'p.{k}': v for k, v in pulse_obs.items() if k != 'ts'})
+                if rhythm_obs:
+                    mol_obs.update({f'r.{k}': v for k, v in rhythm_obs.items() if k != 'ts'})
+                if drift_obs:
+                    mol_obs.update({f'd.{k}': v for k, v in drift_obs.items() if k != 'ts'})
+                mol_obs.update({'PS': pulse_score, 'RS': rhythm_score, 'DS': drift_score})
+                mol_obs.update({'H': now.hour, 'W': now.weekday()})
+                mol_tokens = self.molecule_lang.encode_observation(mol_obs)
+                explanation = self.molecule.explain(mol_tokens, action=action)
+            except Exception:
+                explanation = ''
 
         # Act
-        status = f"P={pulse_score:.1f} R={rhythm_score:.1f} -> {action}"
+        status = f"P={pulse_score:.1f} R={rhythm_score:.1f} D={drift_score:.1f} -> {action}"
+        if explanation:
+            status += f" ({explanation})"
         if action == 'alert' and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
             msg = f"KIRI alert: {status}"
             if pulse_obs:

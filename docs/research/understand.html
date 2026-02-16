@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIRI — Learn Everything</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fafaf8;--s1:#ffffff;--s2:#f2f2ee;--bdr:#e0e0d8;
+  --tx:#1a1a1a;--dim:#666670;--g:#16a34a;--a:#b45309;--r:#dc2626;
+  --b:#2563eb;--p:#7c3aed;--c:#0891b2;
+  --sans:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;--hd:'Newsreader',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:15px;line-height:1.75}
+a{color:var(--g);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Top bar */
+.topbar{border-bottom:1px solid var(--bdr);padding:12px 24px;display:flex;align-items:center;gap:16px;font-family:var(--mono);font-size:12px;position:sticky;top:0;background:var(--bg);z-index:100}
+.topbar .brand{font-weight:500;color:var(--tx);letter-spacing:1px}
+.topbar a{color:var(--dim);font-size:11px}
+.topbar a:hover{color:var(--g)}
+.topbar .sep{color:var(--bdr)}
+
+/* Wrapper */
+.w{max-width:920px;margin:0 auto;padding:40px 24px 100px}
+
+/* Hero */
+.hero{margin-bottom:32px}
+.hero .label{font-family:var(--mono);font-size:10px;color:var(--g);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+.hero h1{font-family:var(--hd);font-size:42px;font-weight:500;line-height:1.15;letter-spacing:-0.5px;margin-bottom:10px}
+.hero h1 em{font-style:italic;color:var(--g)}
+.hero p{color:var(--dim);font-size:15px;max-width:640px;font-weight:300}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--bdr);margin-bottom:32px;overflow-x:auto;position:sticky;top:45px;background:var(--bg);z-index:90;padding-top:4px}
+.tabs button{background:none;border:none;font-family:var(--mono);font-size:11px;padding:10px 18px;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .2s;letter-spacing:.3px}
+.tabs button:hover{color:var(--tx)}
+.tabs button.on{color:var(--g);border-bottom-color:var(--g)}
+
+/* Sections */
+.sec{display:none}
+.sec.on{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Typography */
+h2{font-family:var(--hd);font-size:28px;font-weight:500;margin:36px 0 12px;letter-spacing:-0.3px}
+h2:first-child{margin-top:0}
+h3{font-family:var(--mono);font-size:10px;color:var(--g);letter-spacing:2px;text-transform:uppercase;margin:28px 0 10px;font-weight:500}
+h4{font-size:16px;font-weight:500;margin:16px 0 6px}
+p{color:var(--dim);margin-bottom:12px;font-weight:300}
+p strong{color:var(--tx);font-weight:500}
+
+/* Code */
+.code{background:#1a1a2e;color:#d8d5cf;border-radius:6px;padding:16px 20px;margin:14px 0;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.8}
+.code .g{color:#4ade80}.code .b{color:#60a5fa}.code .a{color:#fbbf24}.code .r{color:#f87171}.code .p{color:#c084fc}.code .c{color:#22d3ee}.code .d{color:#888}
+
+/* Callout */
+.co{border-left:3px solid;padding:12px 16px;margin:14px 0;font-size:14px;border-radius:0 4px 4px 0}
+.cog{border-color:var(--g);background:rgba(22,163,74,.06)}
+.coa{border-color:var(--a);background:rgba(180,83,9,.06)}
+.cob{border-color:var(--b);background:rgba(37,99,235,.06)}
+.cop{border-color:var(--p);background:rgba(124,58,237,.06)}
+.cor{border-color:var(--r);background:rgba(220,38,38,.06)}
+
+/* Card */
+.card{background:var(--s1);border:1px solid var(--bdr);border-radius:6px;padding:20px;margin:14px 0}
+.card h4{margin-top:0}
+
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:13px;margin:14px 0}
+th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--bdr);font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:500}
+td{padding:8px 10px;border-bottom:1px solid var(--bdr)}
+
+/* Grid */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.grid2{grid-template-columns:1fr}}
+
+/* Canvas */
+canvas{width:100%;border:1px solid var(--bdr);border-radius:6px;background:var(--s1)}
+
+/* Code step-through */
+.step{display:none}
+.step.on{display:block}
+.step-nav{display:flex;gap:8px;align-items:center;margin:16px 0}
+.step-nav button{background:none;border:1px solid var(--bdr);color:var(--tx);font-family:var(--mono);font-size:11px;padding:5px 14px;border-radius:4px;cursor:pointer;transition:all .2s}
+.step-nav button:hover{border-color:var(--g);color:var(--g)}
+.step-nav button:disabled{opacity:.3;cursor:default}
+.step-nav button:disabled:hover{border-color:var(--bdr);color:var(--tx)}
+.step-nav .counter{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.step-dots{display:flex;gap:4px;margin-left:auto}
+.step-dots span{width:8px;height:8px;border-radius:50%;background:var(--bdr);transition:background .2s}
+.step-dots span.on{background:var(--g)}
+
+/* Metric bars (live tab) */
+.mrow{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.mlabel{width:50px;font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;flex-shrink:0}
+.mbar{flex:1;height:6px;background:var(--s2);border-radius:4px;overflow:hidden}
+.mfill{height:100%;border-radius:4px;transition:width .4s,background .4s}
+.mval{width:60px;text-align:right;font-family:var(--mono);font-size:12px;flex-shrink:0}
+
+/* Score display */
+.score-big{font-family:var(--mono);font-size:32px;font-weight:600;margin:8px 0 4px}
+.verdict{display:inline-block;padding:3px 12px;border-radius:100px;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;border:1px solid}
+.verdict.normal{color:var(--g);border-color:var(--g)}
+.verdict.elevated{color:var(--a);border-color:var(--a)}
+.verdict.anomaly{color:var(--r);border-color:var(--r)}
+.verdict.not_trained{color:var(--dim);border-color:var(--bdr)}
+
+/* Tokens */
+.tokens{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.tok{padding:2px 7px;border-radius:3px;font-family:var(--mono);font-size:10px;border:1px solid var(--bdr)}
+
+/* Train button */
+.btn{background:none;border:1px solid var(--bdr);color:var(--tx);font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:4px;cursor:pointer;transition:all .2s}
+.btn:hover{border-color:var(--g);color:var(--g)}
+.btn:disabled{opacity:.3;cursor:default}
+.inp{width:60px;background:var(--s2);border:1px solid var(--bdr);color:var(--tx);font-family:var(--mono);font-size:11px;padding:5px 8px;border-radius:4px;text-align:center}
+
+/* Offline */
+.offline-msg{padding:30px 20px;color:var(--dim);text-align:center;line-height:2}
+.offline-msg code{display:block;background:#1a1a2e;color:#4ade80;padding:12px 16px;margin:12px auto;max-width:420px;border-radius:6px;text-align:left;font-family:var(--mono);font-size:12px;line-height:1.8}
+
+/* Sparklines */
+.spark{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap}
+.spark-item{display:flex;align-items:center;gap:6px}
+.spark-label{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;width:32px}
+.spark-bars{display:flex;align-items:flex-end;gap:1px;height:20px}
+.spark-bar{width:3px;border-radius:1px;transition:height .2s}
+
+/* Footer */
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--bdr);text-align:center;color:var(--dim);font-size:11px;font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">KIRI</span>
+  <span class="sep">/</span>
+  <a href="../index.html">home</a>
+  <span class="sep">/</span>
+  <a href="../monitor.html">monitor</a>
+  <span class="sep">/</span>
+  <a href="../walkthrough.html">walkthrough</a>
+  <span class="sep">/</span>
+  <a href="hardware.html">hardware</a>
+  <span class="sep">/</span>
+  <span style="color:var(--tx);font-size:11px">learn everything</span>
+</div>
+
+<div class="w">
+
+<div class="hero">
+  <div class="label">research &middot; documentation</div>
+  <h1>Learn <em>Everything</em></h1>
+  <p>Run KIRI, understand the code line by line, watch it score live metrics, check if the model is actually learning, and see where this architecture goes next.</p>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="on" data-t="run">Run It</button>
+  <button data-t="code">Learn the Code</button>
+  <button data-t="live">Live System</button>
+  <button data-t="accuracy">Accuracy &amp; Weights</button>
+  <button data-t="dream">Dream Further</button>
+</div>
+
+<!-- ============================================ -->
+<!-- TAB 1: RUN IT                                -->
+<!-- ============================================ -->
+<div class="sec on" id="run">
+<h2>Every Command You Need</h2>
+<p>KIRI has zero external dependencies. Python 3 stdlib only. PyTorch is optional (for GPU acceleration).</p>
+
+<h3>Project Structure</h3>
+<div class="code"><pre><span class="d">~/Binnode/kiri/</span>
+  core/
+    value.py           <span class="d"># scalar autograd engine (backpropagation)</span>
+    language.py        <span class="d"># quantizes continuous values into token buckets</span>
+    atom.py            <span class="d"># decoder-only transformer + Adam optimizer</span>
+    atom_torch.py      <span class="d"># PyTorch port (MPS accelerated, 27x faster)</span>
+    pipe.py            <span class="d"># linear composition engine</span>
+  atoms/
+    pulse/             <span class="d"># infrastructure metrics (CPU, mem, disk, load)</span>
+    rhythm/            <span class="d"># work patterns (keyboard/mouse idle time)</span>
+    drift/             <span class="d"># task patterns (tasks added/completed/switched)</span>
+    nerve/             <span class="d"># decision engine (aggregates atom scores)</span>
+  data/                <span class="d"># collected JSONL files (one per day)</span>
+  server.py            <span class="d"># HTTP API server (port 7745)</span>
+  kiri.py              <span class="d"># daemon: collect + score + decide + act</span>
+  config.py            <span class="d"># global configuration</span></pre></div>
+
+<h3>1. Generate Synthetic Data</h3>
+<p>Before training, you need data. Generate a week of synthetic observations to test with.</p>
+<div class="code"><pre><span class="d"># From ~/Binnode (parent of kiri/):</span>
+<span class="g">python3 -m kiri.atoms.pulse.collect --dry-run</span>        <span class="d"># 7 days synthetic infra data</span>
+<span class="g">python3 -m kiri.atoms.rhythm.collect --dry-run</span>       <span class="d"># 7 days synthetic work data</span>
+<span class="g">python3 -m kiri.atoms.drift.collect --dry-run</span>        <span class="d"># 7 days synthetic task data</span>
+<span class="g">python3 -m kiri.atoms.nerve.collect --dry-run</span>        <span class="d"># 7 days synthetic nerve data</span>
+
+<span class="d"># Files land in kiri/data/pulse_2026-02-07.jsonl, etc.</span>
+<span class="d"># Each line is one JSON observation: {"C":52,"M":55,"D":40,...}</span></pre></div>
+
+<h3>2. Train All Atoms</h3>
+<p>Each atom trains on its own data files. 500 steps takes ~8 minutes in pure Python, ~18 seconds with PyTorch/MPS.</p>
+<div class="code"><pre><span class="g">python3 -m kiri.atoms.pulse.train --data 'kiri/data/pulse_*.jsonl' --steps 500 --verbose</span>
+<span class="g">python3 -m kiri.atoms.rhythm.train --data 'kiri/data/rhythm_*.jsonl' --steps 500 --verbose</span>
+<span class="g">python3 -m kiri.atoms.drift.train --data 'kiri/data/drift_*.jsonl' --steps 500 --verbose</span>
+<span class="g">python3 -m kiri.atoms.nerve.train --data 'kiri/data/nerve_*.jsonl' --steps 500 --verbose</span>
+
+<span class="d"># Weights saved to atoms/pulse/weights/pulse_weights.json, etc.</span>
+<span class="d"># --verbose runs anomaly comparison after training</span></pre></div>
+
+<h3>3. Collect Live Data</h3>
+<p>Collect real metrics from your machine. Single shot or continuous.</p>
+<div class="code"><pre><span class="d"># Single observation (instant):</span>
+<span class="g">python3 -m kiri.atoms.pulse.collect</span>
+
+<span class="d"># Continuous — every 5s for 1 hour:</span>
+<span class="g">python3 -m kiri.atoms.pulse.collect --interval 5 --duration 3600</span>
+
+<span class="d"># Blast mode — every 1s for 10 minutes:</span>
+<span class="g">python3 -m kiri.atoms.pulse.collect --interval 1 --duration 600</span></pre></div>
+
+<h3>4. Start the Server</h3>
+<p>The API server serves status, history, training, and collection endpoints.</p>
+<div class="code"><pre><span class="d"># Start server on port 7745:</span>
+<span class="g">python3 -m kiri.server --port 7745</span>
+
+<span class="d"># With background collection (every 30s):</span>
+<span class="g">python3 -m kiri.server --collect --interval 30</span>
+
+<span class="d"># API endpoints:</span>
+<span class="d">#   GET  /api/status       → live collect + score</span>
+<span class="d">#   GET  /api/history?n=100 → scored historical observations</span>
+<span class="d">#   POST /api/train?atom=pulse&steps=300 → streaming NDJSON</span>
+<span class="d">#   GET  /api/collect      → single collection cycle</span></pre></div>
+
+<h3>5. Run the Daemon</h3>
+<p>The full daemon collects from all sources, scores through each atom, and lets Nerve decide what to do.</p>
+<div class="code"><pre><span class="g">python3 -m kiri.kiri</span>
+
+<span class="d"># Runs forever: collect → score → decide → act → loop</span>
+<span class="d"># Decisions: ok (log), alert (Telegram), suppress, retrain</span></pre></div>
+
+<h3>6. Log Task Activity (Drift Atom)</h3>
+<div class="code"><pre><span class="g">python3 -m kiri.atoms.drift.collect --added 3 --completed 1 --switched 2</span>
+
+<span class="d"># Logs: 3 tasks added, 1 completed, 2 project switches</span>
+<span class="d"># Drift detects scope creep patterns from these numbers</span></pre></div>
+
+<h3>Idempotency Guarantees</h3>
+<table>
+<tr><th>Operation</th><th>Behavior</th><th>Safe to repeat?</th></tr>
+<tr><td><strong>collect</strong></td><td>Appends to daily JSONL file</td><td style="color:var(--g)">Yes &mdash; never overwrites</td></tr>
+<tr><td><strong>train</strong></td><td>Overwrites weight files</td><td style="color:var(--a)">Yes &mdash; weights are replaced atomically</td></tr>
+<tr><td><strong>score</strong></td><td>Read-only forward pass</td><td style="color:var(--g)">Yes &mdash; pure computation, no side effects</td></tr>
+<tr><td><strong>dry-run</strong></td><td>Overwrites synthetic data files</td><td style="color:var(--a)">Yes &mdash; same seed produces same data</td></tr>
+</table>
+
+<h3>PyTorch Acceleration (Optional)</h3>
+<div class="code"><pre><span class="d"># Create a virtualenv with PyTorch:</span>
+<span class="g">python3 -m venv kiri-env</span>
+<span class="g">source kiri-env/bin/activate</span>
+<span class="g">pip install torch</span>
+
+<span class="d"># AtomTorch is a drop-in replacement for Atom:</span>
+from kiri.core import AtomTorch  <span class="d"># uses MPS on Apple Silicon</span>
+<span class="d"># 500 steps: 17.6s (PyTorch/MPS) vs ~8min (pure Python) = 27x faster</span></pre></div>
+</div>
+
+<!-- ============================================ -->
+<!-- TAB 2: LEARN THE CODE                        -->
+<!-- ============================================ -->
+<div class="sec" id="code">
+<h2>The Code, Line by Line</h2>
+<p>Seven sections walk through the entire architecture. Each section shows code on top, plain English explanation below, and a Canvas visualization where it helps. Use Prev/Next to walk through.</p>
+
+<div class="step-nav" id="stepNav">
+  <button id="prevBtn" disabled>&larr; Prev</button>
+  <span class="counter" id="stepCounter">1 / 7</span>
+  <button id="nextBtn">Next &rarr;</button>
+  <div class="step-dots" id="stepDots"></div>
+</div>
+
+<!-- Step 1: Data & Tokenizer -->
+<div class="step on" data-step="0">
+<h2>1. Data &amp; Tokenizer</h2>
+<p>Karpathy's microgpt trains on baby names. 26 lowercase letters + a BOS token = 27 vocabulary. KIRI replaces this with <strong>state tokens</strong>: CPU buckets, memory buckets, load average, etc.</p>
+
+<div class="grid2">
+<div class="card">
+<h4 style="color:var(--b)">microgpt (English)</h4>
+<div class="code"><pre>docs = ["emma","olivia","ava"]
+uchars = sorted(set(''.join(docs)))
+<span class="d"># ['a','e','i','l','m','o','v']</span>
+BOS = len(uchars)  <span class="d"># 7</span>
+vocab_size = 8     <span class="d"># 7 chars + BOS</span></pre></div>
+</div>
+<div class="card">
+<h4 style="color:var(--g)">KIRI (State)</h4>
+<div class="code"><pre>schema = {
+  'C': (0,100,10), <span class="d"># CPU: C0..C9</span>
+  'M': (0,100,10), <span class="d"># Mem: M0..M9</span>
+  'D': (0,100,10), <span class="d"># Disk: D0..D9</span>
+  'S': (0,100, 5), <span class="d"># Swap: S0..S4</span>
+  'L': (0, 20, 5), <span class="d"># Load: L0..L4</span>
+  'N': (0,  1, 2), <span class="d"># Net:  N0 N1</span>
+}
+<span class="d"># 42 tokens + BOS = 43 vocab</span></pre></div>
+</div>
+</div>
+
+<p><strong>The quantization trick:</strong> CPU 52% &rarr; bucket 5 &rarr; token "C5". Memory 73% &rarr; bucket 7 &rarr; "M7". This keeps vocabulary small (43 tokens instead of infinite continuous values) so the model stays tiny.</p>
+
+<div class="co cog"><strong>Key insight:</strong> A GPT doesn't know what language it's speaking. It predicts the next token in a sequence. Change the vocabulary from characters to state tokens and it becomes an anomaly detector. Same math. Different meaning.</div>
+
+<canvas id="cvTokenizer" height="100"></canvas>
+</div>
+
+<!-- Step 2: Value (Autograd) -->
+<div class="step" data-step="1">
+<h2>2. Value &mdash; The Autograd Engine</h2>
+<p>Every neural network needs backpropagation. The Value class implements it in ~40 lines. Each Value wraps a scalar number and tracks how it was created, so gradients can flow backwards through any computation.</p>
+
+<div class="code"><pre><span class="g">class Value:</span>
+    __slots__ = ('data', 'grad', '_children', '_local_grads')
+
+    def __init__(self, data, children=(), local_grads=()):
+        self.data = data          <span class="d"># the scalar value (a float)</span>
+        self.grad = 0             <span class="d"># d(loss)/d(self) — filled by backward()</span>
+        self._children = children <span class="d"># parent Values that created this one</span>
+        self._local_grads = local_grads  <span class="d"># d(self)/d(child) for each parent</span></pre></div>
+
+<p><strong>Every operation creates a new Value that remembers its parents:</strong></p>
+
+<div class="code"><pre>    def __add__(self, other):
+        <span class="d"># d(a+b)/da = 1, d(a+b)/db = 1</span>
+        return Value(self.data + other.data, (self, other), <span class="b">(1, 1)</span>)
+
+    def __mul__(self, other):
+        <span class="d"># d(a*b)/da = b, d(a*b)/db = a</span>
+        return Value(self.data * other.data, (self, other), <span class="b">(other.data, self.data)</span>)
+
+    def log(self):
+        <span class="d"># d(log(x))/dx = 1/x</span>
+        return Value(math.log(self.data), (self,), <span class="b">(1/self.data,)</span>)
+
+    def relu(self):
+        <span class="d"># d(relu(x))/dx = 1 if x > 0 else 0</span>
+        return Value(max(0, self.data), (self,), <span class="b">(float(self.data > 0),)</span>)</pre></div>
+
+<p><strong>backward() walks the computation graph in reverse, applying the chain rule:</strong></p>
+
+<div class="code"><pre>    def backward(self):
+        topo, visited = [], set()
+        def build_topo(v):              <span class="d"># DFS post-order traversal</span>
+            if v not in visited:
+                visited.add(v)
+                for child in v._children: build_topo(child)
+                topo.append(v)
+        build_topo(self)
+        self.grad = 1                   <span class="d"># d(loss)/d(loss) = 1</span>
+        for v in reversed(topo):
+            for child, lg in zip(v._children, v._local_grads):
+                child.grad += lg * v.grad  <span class="d"># THE chain rule</span></pre></div>
+
+<div class="co cob"><strong>This IS backpropagation.</strong> PyTorch, JAX, TensorFlow all do the same thing but on tensors. Understanding these 40 lines = understanding how all neural networks train. The chain rule: d(loss)/d(x) = d(loss)/d(y) &times; d(y)/d(x), accumulated through the graph.</div>
+
+<canvas id="cvAutograd" height="140"></canvas>
+</div>
+
+<!-- Step 3: Initialize Weights -->
+<div class="step" data-step="2">
+<h2>3. Initialize Weights</h2>
+<p>The model starts as random numbers. Each weight matrix is initialized with small Gaussian noise (std=0.08). These numbers will be adjusted by training until the model can predict the next token.</p>
+
+<div class="code"><pre><span class="g">class Atom:</span>
+    def __init__(self, lang, n_embd=32, n_head=4, n_layer=2, block_size=16):
+        <span class="d"># Random matrix: nout rows, nin columns, each Value(gauss(0, 0.08))</span>
+        mat = lambda nout, nin, std=0.08: [
+            [Value(random.gauss(0, std)) for _ in range(nin)]
+            for _ in range(nout)
+        ]
+
+        self.sd = {
+            'wte':     mat(43, 32),    <span class="d"># token embeddings: 43 vocab &times; 32 dims</span>
+            'wpe':     mat(16, 32),    <span class="d"># position embeddings: 16 positions &times; 32 dims</span>
+            'lm_head': mat(43, 32),    <span class="d"># output projection: 43 vocab &times; 32 dims</span>
+        }
+        <span class="d"># Per layer: 4 attention matrices + 2 MLP matrices</span>
+        for i in range(2):             <span class="d"># 2 layers</span>
+            self.sd[f'l{i}.wq'] = mat(32, 32)   <span class="d"># query projection</span>
+            self.sd[f'l{i}.wk'] = mat(32, 32)   <span class="d"># key projection</span>
+            self.sd[f'l{i}.wv'] = mat(32, 32)   <span class="d"># value projection</span>
+            self.sd[f'l{i}.wo'] = mat(32, 32)   <span class="d"># output projection</span>
+            self.sd[f'l{i}.f1'] = mat(128, 32)  <span class="d"># MLP expand (4&times;)</span>
+            self.sd[f'l{i}.f2'] = mat(32, 128)  <span class="d"># MLP compress</span></pre></div>
+
+<h3>Parameter Count</h3>
+<table>
+<tr><th>Component</th><th>Shape</th><th>Params</th><th>Purpose</th></tr>
+<tr><td style="color:var(--g)"><strong>wte</strong></td><td>43 &times; 32</td><td>1,376</td><td>Token embeddings</td></tr>
+<tr><td style="color:var(--b)"><strong>wpe</strong></td><td>16 &times; 32</td><td>512</td><td>Position embeddings</td></tr>
+<tr><td style="color:var(--a)"><strong>lm_head</strong></td><td>43 &times; 32</td><td>1,376</td><td>Output projection</td></tr>
+<tr><td style="color:var(--p)"><strong>attention</strong></td><td>2 layers &times; 4 &times; (32&times;32)</td><td>16,384</td><td>Q, K, V, O per layer</td></tr>
+<tr><td style="color:var(--c)"><strong>MLP</strong></td><td>2 layers &times; (128&times;32 + 32&times;128)</td><td>8,192</td><td>Feed-forward network</td></tr>
+<tr style="font-weight:600"><td>Total</td><td></td><td style="color:var(--g)">27,840</td><td></td></tr>
+</table>
+
+<div class="co coa"><strong>27,840 numbers.</strong> That's the entire model. A single JSON file, smaller than most images. Every number starts random and gets adjusted until the model understands your system's patterns.</div>
+</div>
+
+<!-- Step 4: Forward Pass -->
+<div class="step" data-step="3">
+<h2>4. Forward Pass</h2>
+<p>Given a token, predict the probability distribution over the next token. This is the core computation that both training and scoring use.</p>
+
+<div class="code"><pre>def forward(self, token_id, pos_id, keys, values):
+    sd, hd, nh = self.sd, self.head_dim, self.n_head
+
+    <span class="d"># 1. Look up token embedding + position embedding</span>
+    x = [t + p for t, p in zip(sd['wte'][token_id], sd['wpe'][pos_id])]
+    x = self._rmsnorm(x)      <span class="d"># normalize: x / sqrt(mean(x^2))</span>
+
+    <span class="d"># 2. For each transformer layer:</span>
+    for li in range(self.n_layer):
+        xr = x                 <span class="d"># save for residual connection</span>
+
+        <span class="d"># Multi-head attention</span>
+        x = self._rmsnorm(x)
+        q = self._linear(x, sd[f'l{li}.wq'])  <span class="d"># query: "what am I looking for?"</span>
+        k = self._linear(x, sd[f'l{li}.wk'])  <span class="d"># key: "what do I contain?"</span>
+        v = self._linear(x, sd[f'l{li}.wv'])  <span class="d"># value: "what info do I carry?"</span>
+
+        <span class="d"># KV cache: remember keys/values from all positions</span>
+        keys[li].append(k)
+        values[li].append(v)
+
+        <span class="d"># 4-head attention: each head sees 8 dims (32/4)</span>
+        xa = []
+        for h in range(nh):
+            <span class="d"># Attention scores: Q &middot; K^T / sqrt(head_dim)</span>
+            al = [sum(qh[j]*kh[t][j]...) / hd**0.5 ...]
+            aw = self._softmax(al)    <span class="d"># attention weights</span>
+            ho = [sum(aw[t]*vh[t][j]...) ...]  <span class="d"># weighted sum</span>
+            xa.extend(ho)
+
+        x = self._linear(xa, sd[f'l{li}.wo'])
+        x = [a + b for a, b in zip(x, xr)]  <span class="d"># + residual</span>
+
+        <span class="d"># MLP: expand 4x, ReLU, compress back</span>
+        xr = x
+        x = self._rmsnorm(x)
+        x = self._linear(x, sd[f'l{li}.f1'])  <span class="d"># 32 &rarr; 128</span>
+        x = [xi.relu() for xi in x]            <span class="d"># non-linearity</span>
+        x = self._linear(x, sd[f'l{li}.f2'])  <span class="d"># 128 &rarr; 32</span>
+        x = [a + b for a, b in zip(x, xr)]    <span class="d"># + residual</span>
+
+    <span class="d"># 3. Project to vocabulary logits</span>
+    return self._linear(x, sd['lm_head'])  <span class="d"># 32 &rarr; 43 logits</span></pre></div>
+
+<div class="co cog"><strong>Residual connections</strong> are the secret to deep networks. Each layer adds its output to its input (x = x + layer(x)). This means gradients flow directly through the skip connection during backprop, preventing them from vanishing. Even a 100-layer network can train because of residuals.</div>
+
+<canvas id="cvForward" height="200"></canvas>
+</div>
+
+<!-- Step 5: Training Loop -->
+<div class="step" data-step="4">
+<h2>5. Training Loop</h2>
+<p>For each token in a sequence, predict the next one. The loss is the average negative log-probability of the correct answers. Backpropagate. Update weights with Adam.</p>
+
+<div class="code"><pre>def train_step(self, token_sequence, lr=0.01):
+    n = min(self.block_size, len(token_sequence) - 1)
+    keys = [[] for _ in range(self.n_layer)]
+    vals = [[] for _ in range(self.n_layer)]
+    losses = []
+
+    <span class="d"># For each position, predict the next token</span>
+    for pos in range(n):
+        logits = self.forward(token_sequence[pos], pos, keys, vals)
+        probs = self._softmax(logits)
+        target = token_sequence[pos + 1]
+        losses.append(<span class="r">-probs[target].log()</span>)  <span class="d"># cross-entropy</span>
+
+    <span class="d"># Average loss across all positions</span>
+    loss = (1 / n) * sum(losses)
+    <span class="g">loss.backward()</span>  <span class="d"># traces through ENTIRE computation graph</span>
+
+    <span class="d"># Adam optimizer with linear LR decay</span>
+    self.step_count += 1
+    lr_t = lr * (1 - self.step_count / 10000)  <span class="d"># decay</span>
+    lr_t = max(lr_t, lr * 0.1)                  <span class="d"># floor at 10%</span>
+    b1, b2, eps = 0.85, 0.99, 1e-8
+
+    for i, p in enumerate(self.params):
+        <span class="d"># Momentum + adaptive learning rate</span>
+        self.m[i] = b1 * self.m[i] + (1-b1) * p.grad
+        self.v[i] = b2 * self.v[i] + (1-b2) * p.grad**2
+        mh = self.m[i] / (1 - b1**self.step_count)  <span class="d"># bias correction</span>
+        vh = self.v[i] / (1 - b2**self.step_count)
+        p.data -= lr_t * mh / (vh**0.5 + eps)
+        p.grad = 0  <span class="d"># reset for next step</span></pre></div>
+
+<div class="co cop"><strong>Adam = momentum + adaptive rates.</strong> m tracks the running average of gradients (momentum). v tracks the running average of squared gradients (how noisy). Together: move confidently in consistent directions, cautiously in noisy ones. b1=0.85 is more aggressive than the standard 0.9, which works for small models.</div>
+</div>
+
+<!-- Step 6: Inference / Anomaly Scoring -->
+<div class="step" data-step="5">
+<h2>6. Inference &amp; Anomaly Scoring</h2>
+<p>After training, the model has learned "what usually follows what." To detect anomalies, feed in a new observation and measure how surprised the model is.</p>
+
+<div class="code"><pre>def sequence_anomaly_score(atom, token_sequence):
+    n = min(atom.block_size, len(token_sequence) - 1)
+    keys = [[] for _ in range(atom.n_layer)]
+    vals = [[] for _ in range(atom.n_layer)]
+    per_token = []
+
+    for pos in range(n):
+        logits = atom.forward(token_sequence[pos], pos, keys, vals)
+        probs = atom._softmax(logits)
+        target = token_sequence[pos + 1]
+        target_prob = probs[target].data
+        score = <span class="r">-math.log(max(target_prob, 1e-10))</span>  <span class="d"># surprise!</span>
+        per_token.append((token_name, score, target_prob))
+
+    avg = sum(s for _, s, _ in per_token) / len(per_token)
+    return avg, per_token</pre></div>
+
+<h3>How Scoring Works</h3>
+<div class="grid2">
+<div class="card">
+<h4 style="color:var(--g)">Normal (work hours)</h4>
+<div class="code"><pre>C5 M5 D4 S1 L1 N1
+<span class="d">Model: "Seen this 1000 times"</span>
+<span class="g">Score: 0.72</span> (low surprise)</pre></div>
+</div>
+<div class="card">
+<h4 style="color:var(--r)">Anomalous (3am spike)</h4>
+<div class="code"><pre>C9 M9 D4 S4 L4 N1
+<span class="d">Model: "C9?! M9?! Never!"</span>
+<span class="r">Score: 7.98</span> (high surprise)
+Per-token: C9=9.38 M9=12.11</pre></div>
+</div>
+</div>
+
+<div class="co cog"><strong>No rules needed.</strong> No "if CPU > 90% then alert." The model learns what's normal from your data and flags anything that doesn't fit. Anomalous is 11&times; more surprising than normal. The model identifies WHICH metrics are unusual (C9, M9 have highest individual scores) and by how much.</div>
+</div>
+
+<!-- Step 7: KIRI = Same Model, Different Vocabulary -->
+<div class="step" data-step="6">
+<h2>7. KIRI = Same Model, Different Vocabulary</h2>
+<p>Karpathy's microgpt and KIRI's atoms are the <strong>exact same architecture</strong>. The only difference is what the tokens mean.</p>
+
+<table>
+<tr><th></th><th>microgpt (Karpathy)</th><th>KIRI Pulse Atom</th></tr>
+<tr><td><strong>Vocabulary</strong></td><td>26 letters + BOS = 27</td><td>42 state tokens + BOS = 43</td></tr>
+<tr><td><strong>Training data</strong></td><td>"emma" "olivia" "ava"</td><td>"C5 M5 D4 S1 L1 N1"</td></tr>
+<tr><td><strong>Prediction</strong></td><td>Next character</td><td>Next metric value</td></tr>
+<tr><td><strong>Use case</strong></td><td>Generate baby names</td><td>Detect anomalies</td></tr>
+<tr><td><strong>Params</strong></td><td>4,192</td><td>27,840</td></tr>
+<tr><td><strong>Autograd</strong></td><td>Same Value class</td><td>Same Value class</td></tr>
+<tr><td><strong>Attention</strong></td><td>Same multi-head</td><td>Same multi-head</td></tr>
+<tr><td><strong>Training</strong></td><td>Same Adam + cross-entropy</td><td>Same Adam + cross-entropy</td></tr>
+</table>
+
+<div class="co cop"><strong>The fundamental insight:</strong> A language model is a general-purpose sequence predictor. If you can express your problem as "predict the next token in a sequence," you can solve it with a tiny GPT. Infrastructure metrics, work patterns, task states, sensor data, financial transactions &mdash; they all become token sequences. Same architecture. Different vocabulary. Different purpose.</div>
+
+<p>This is what makes atoms composable. Every atom speaks the same "language of sequences" internally. The Pipe connects them: output of one atom's prediction feeds into the next atom's input. Nerve sits on top and learns which combinations of atom scores should trigger which actions.</p>
+
+<canvas id="cvVocab" height="120"></canvas>
+</div>
+
+</div><!-- /code tab -->
+
+<!-- ============================================ -->
+<!-- TAB 3: LIVE SYSTEM                           -->
+<!-- ============================================ -->
+<div class="sec" id="live">
+<h2>Live System</h2>
+<p>Connects to the KIRI server at <code>localhost:7745</code>. Shows real-time metrics, anomaly scores, and history. Retrain models directly from this page.</p>
+
+<div id="liveOffline" class="offline-msg">
+  Not connected to KIRI server.<br>Start it:
+  <code>cd ~/Binnode<br>python3 -m kiri.server --collect --interval 30</code>
+</div>
+
+<div id="liveContent" style="display:none">
+
+<h3>Pulse &mdash; Infrastructure</h3>
+<div id="lPulseMetrics"></div>
+<div style="display:flex;gap:16px;align-items:flex-end;margin-top:8px">
+  <div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px">ANOMALY SCORE</div>
+    <div class="score-big" id="lPScore">&mdash;</div>
+  </div>
+  <span class="verdict not_trained" id="lPVerdict">&mdash;</span>
+</div>
+<div class="tokens" id="lPTokens"></div>
+
+<h3>Rhythm &mdash; Work Pattern</h3>
+<div id="lRhythmMetrics"></div>
+<div style="display:flex;gap:16px;align-items:flex-end;margin-top:8px">
+  <div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px">ANOMALY SCORE</div>
+    <div class="score-big" id="lRScore">&mdash;</div>
+  </div>
+  <span class="verdict not_trained" id="lRVerdict">&mdash;</span>
+</div>
+<div class="tokens" id="lRTokens"></div>
+
+<h3>History</h3>
+<div style="margin-bottom:8px">
+  <button class="btn" id="lHPBtn" onclick="lLoadHist('pulse')">pulse</button>
+  <button class="btn" id="lHRBtn" onclick="lLoadHist('rhythm')">rhythm</button>
+</div>
+<canvas id="lHistC" height="180"></canvas>
+<div class="spark" id="lSparklines"></div>
+
+<h3>Training</h3>
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+  <button class="btn" id="lBtnP" onclick="lRetrain('pulse')">Retrain Pulse</button>
+  <button class="btn" id="lBtnR" onclick="lRetrain('rhythm')">Retrain Rhythm</button>
+  <input type="number" class="inp" id="lStepsIn" value="300" min="50" max="2000">
+  <span style="color:var(--dim);font-size:12px">steps</span>
+</div>
+<div id="lTrainStatus" style="font-family:var(--mono);font-size:11px;color:var(--dim)">ready</div>
+<canvas id="lLossC" height="160" style="margin-top:8px"></canvas>
+
+</div><!-- /liveContent -->
+</div>
+
+<!-- ============================================ -->
+<!-- TAB 4: ACCURACY & WEIGHTS                    -->
+<!-- ============================================ -->
+<div class="sec" id="accuracy">
+<h2>Is the Model Learning?</h2>
+<p>Three signals tell you whether training worked.</p>
+
+<h3>Signal 1: Loss Decreases</h3>
+<div class="card">
+<p><strong>Random weights start at loss ~3.76</strong> (that's -log(1/43) &mdash; uniform distribution over 43 tokens). If training is working, loss should drop below 1.0 within 200-300 steps.</p>
+<div class="code"><pre>step    1/500 | loss <span class="r">3.98</span>    <span class="d">&larr; random, knows nothing</span>
+step   50/500 | loss <span class="a">0.31</span>    <span class="d">&larr; learning fast</span>
+step  250/500 | loss <span class="a">0.71</span>    <span class="d">&larr; fluctuation normal (batch size 1)</span>
+step  500/500 | loss <span class="g">0.59</span>    <span class="d">&larr; converged</span></pre></div>
+<p><strong>If loss stays above 3.0 after 100 steps</strong> &rarr; something is wrong (bad data, wrong schema, corrupt weights).</p>
+<p><strong>If loss stays between 1.0-2.0</strong> &rarr; learning but needs more steps or more data.</p>
+<p><strong>If loss drops below 0.5</strong> &rarr; well trained, or possibly overfitting (check signal 2).</p>
+</div>
+
+<h3>Signal 2: Anomaly Scores Differentiate</h3>
+<div class="card">
+<p>The model must give <strong>low scores to normal patterns</strong> and <strong>high scores to unusual ones</strong>. Run the anomaly comparison:</p>
+<div class="code"><pre><span class="g">python3 -m kiri.atoms.pulse.train --data 'kiri/data/pulse_*.jsonl' --steps 500 --verbose</span>
+
+<span class="d"># Expected output:</span>
+normal (moderate load):
+  state: &lt;BOS&gt; C5 M5 D4 S1 L1 N1
+  avg score: <span class="g">0.72</span>
+
+anomalous (maxed out):
+  state: &lt;BOS&gt; C9 M9 D4 S4 L4 N1
+  avg score: <span class="r">7.98</span>
+
+<span class="g">model correctly finds anomaly more surprising (7.98 > 0.72)</span></pre></div>
+<p><strong>Good:</strong> anomaly score is 5&times;+ higher than normal.</p>
+<p><strong>Bad:</strong> scores are similar, or normal is higher than anomaly. Needs more data or more training steps.</p>
+</div>
+
+<h3>Signal 3: Per-Token Scores Make Sense</h3>
+<div class="card">
+<p>Check which specific tokens have high surprise. They should be the ones that are actually unusual.</p>
+<div class="code"><pre><span class="d"># Per-token breakdown from anomalous observation:</span>
+  <span class="r">C9</span>  score=9.38  prob=0.000   <span class="d">&larr; CPU 95%: very unusual</span>
+  <span class="r">M9</span>  score=12.11 prob=0.000   <span class="d">&larr; Memory 90%: very unusual</span>
+  D4  score=0.15  prob=0.858   <span class="d">&larr; Disk 40%: normal</span>
+  <span class="r">S4</span>  score=9.19  prob=0.000   <span class="d">&larr; Swap 80%: very unusual</span>
+  <span class="r">L4</span>  score=6.90  prob=0.001   <span class="d">&larr; Load 18: very unusual</span>
+  N1  score=0.14  prob=0.870   <span class="d">&larr; Network up: normal</span></pre></div>
+<p>C9, M9, S4, L4 have high scores because the model rarely saw them during training. D4 and N1 are fine &mdash; disk at 40% and network up are common. <strong>The model tells you exactly what's wrong.</strong></p>
+</div>
+
+<h3>When the Model Is Wrong</h3>
+<table>
+<tr><th>Problem</th><th>Symptom</th><th>Fix</th></tr>
+<tr><td><strong>Underfitting</strong></td><td>All scores are high (2-4), even for normal data</td><td>More training steps (1000+) or more data</td></tr>
+<tr><td><strong>Overfitting</strong></td><td>Training loss near 0 but anomaly detection poor</td><td>More data variety, fewer steps, or larger model</td></tr>
+<tr><td><strong>Inverted scores</strong></td><td>Normal scores higher than anomalous</td><td>Data is too uniform; model learned wrong patterns</td></tr>
+<tr><td><strong>Flat scores</strong></td><td>Everything scores ~2.0 regardless of input</td><td>Check schema matches data; tokens may be misconfigured</td></tr>
+</table>
+
+<h3>What Are Weight Matrices?</h3>
+<div class="card">
+<p>Each weight file is a JSON dictionary of 2D arrays. The matrices encode everything the model learned:</p>
+<div class="code"><pre><span class="d"># peek inside pulse_weights.json:</span>
+{
+  "config": {"n_embd":32, "n_head":4, "n_layer":2, "block_size":16},
+  "step_count": 500,
+  "weights": {
+    "wte": [[0.042, -0.11, ...], ...],   <span class="d"># 43&times;32: what each token "means"</span>
+    "wpe": [[0.08, 0.03, ...], ...],     <span class="d"># 16&times;32: what each position "means"</span>
+    "l0.wq": [[...], ...],              <span class="d"># 32&times;32: what to look for</span>
+    ...
+  },
+  "adam_m": [...],  <span class="d"># momentum state (27,840 values)</span>
+  "adam_v": [...]   <span class="d"># variance state (27,840 values)</span>
+}</pre></div>
+<p><strong>wte</strong> rows that are similar = tokens that behave similarly. If wte[C5] and wte[C6] are close, the model treats CPU 50% and 60% as interchangeable (which is correct). If wte[C9] is far from everything else, the model considers CPU 95% as unusual.</p>
+</div>
+
+<h3>Inspect Commands</h3>
+<div class="code"><pre><span class="d"># Count training data:</span>
+<span class="g">wc -l kiri/data/pulse_*.jsonl</span>
+
+<span class="d"># Peek at raw observations:</span>
+<span class="g">head -3 kiri/data/pulse_2026-02-14.jsonl</span>
+
+<span class="d"># Check weight file size:</span>
+<span class="g">ls -lh atoms/pulse/weights/pulse_weights.json</span>
+
+<span class="d"># Quick score check via API:</span>
+<span class="g">curl -s localhost:7745/api/status | python3 -m json.tool</span>
+
+<span class="d"># History check:</span>
+<span class="g">curl -s 'localhost:7745/api/history?n=5&atom=pulse' | python3 -m json.tool</span></pre></div>
+
+<h3>The Self-Training Loop</h3>
+<div class="co cop"><strong>Nerve closes the loop.</strong> When Pulse detects an anomaly, Nerve decides: alert, suppress, or retrain. Your response (approve/dismiss) feeds back as Nerve's training data. Over weeks, Nerve learns which alerts matter to you. The system improves by running.<br><br>
+Week 1: Independent atoms, noisy alerts.<br>
+Week 3: Nerve suppresses false alarms.<br>
+Month 2: Cross-domain insights (work pattern + infra state).<br>
+Month 6: Partial automation.</div>
+</div>
+
+<!-- ============================================ -->
+<!-- TAB 5: DREAM FURTHER                         -->
+<!-- ============================================ -->
+<div class="sec" id="dream">
+<h2>Dream Further</h2>
+<p>What becomes possible when tiny language models can be trained on any sequential data, deployed anywhere, and looped into self-improving systems.</p>
+
+<h3>Already Possible (Data Exists)</h3>
+<div class="grid2">
+<div class="card">
+<h4 style="color:var(--g)">Sleep &amp; Energy Inference</h4>
+<p>Rhythm already tracks keyboard/mouse idle time. Patterns in idle data correlate with sleep quality and energy levels. A 3-hour idle block starting at 11pm followed by activity at 6am = 7 hours sleep. The model learns YOUR patterns and flags deviations &mdash; no wearable needed.</p>
+</div>
+<div class="card">
+<h4 style="color:var(--a)">Scope Creep Detection</h4>
+<p>Drift tracks tasks added, completed, and project switches. The ratio tells the story: 8 added / 0 completed / 5 switches = high drift score. Over time, the model learns your normal task rhythm and flags days when you're overcommitting. Early warning for burnout.</p>
+</div>
+<div class="card">
+<h4 style="color:var(--b)">Focus Scoring</h4>
+<p>Mouse movement patterns during work blocks. High activity with few switches = deep focus. Erratic movement with frequent switches = scattered. An atom trained on movement sequences could score focus quality in real time.</p>
+</div>
+<div class="card">
+<h4 style="color:var(--p)">Compound Predictions</h4>
+<p>When Nerve has a month of cross-atom data: "When morning Rhythm is off-pattern AND Drift shows high task switching, afternoon Pulse anomalies are 3&times; more likely." The model can predict infrastructure stress from behavioral data, hours in advance.</p>
+</div>
+</div>
+
+<h3>MPS GPU Scaling</h3>
+<div class="card">
+<p>The AtomTorch module already runs on Apple Silicon's MPS GPU. Training at 27K params takes 17.6 seconds. Scale up:</p>
+<table>
+<tr><th>Params</th><th>n_embd</th><th>n_layer</th><th>Est. Training (500 steps)</th><th>What It Enables</th></tr>
+<tr><td>27,840</td><td>32</td><td>2</td><td>17.6s</td><td>Current: 6-token state sequences</td></tr>
+<tr><td>~100K</td><td>64</td><td>3</td><td>~1 min</td><td>Longer sequences, finer buckets</td></tr>
+<tr><td>~500K</td><td>128</td><td>4</td><td>~5 min</td><td>Cross-domain correlation within one atom</td></tr>
+<tr><td>~1M</td><td>256</td><td>4</td><td>~15 min</td><td>Complex temporal patterns, hour-scale context</td></tr>
+<tr><td>~10M</td><td>512</td><td>6</td><td>~2 hours</td><td>Day-scale patterns, multi-system awareness</td></tr>
+</table>
+<p><strong>Same architecture.</strong> Same Value class, same attention, same training loop. Just bigger matrices. The code doesn't change &mdash; only the hyperparameters.</p>
+</div>
+
+<h3>Nerve + Feedback Loop</h3>
+<table>
+<tr><th>Timeline</th><th>What Nerve Learns</th></tr>
+<tr><td style="color:var(--g)"><strong>Week 1</strong></td><td>Independent atom alerts. 3 pings for 1 situation. Annoying but data is collecting. Nerve has no training data yet.</td></tr>
+<tr><td style="color:var(--b)"><strong>Month 1</strong></td><td>Nerve has ~200 approve/dismiss decisions. Learns: "Pulse anomaly during Rhythm-active = real alert. Pulse anomaly during Rhythm-idle = probably a background job, suppress." False alarm rate drops 60%.</td></tr>
+<tr><td style="color:var(--p)"><strong>Month 3</strong></td><td>Cross-domain patterns emerge. "Monday morning Drift-spike predicts Wednesday Pulse-anomaly." Nerve starts making predictions, not just reactions. You get warnings before problems manifest.</td></tr>
+</table>
+
+<h3>The Fundamental Insight</h3>
+<div class="co cog" style="font-size:15px">
+<strong>Same model. Different vocabulary.</strong><br><br>
+A language model is a sequence predictor. If you can turn your problem into a sequence of tokens, you can train a tiny GPT on it. Infrastructure metrics, work patterns, task states, sensor readings, financial transactions, medical vitals, network traffic &mdash; they all become token sequences.<br><br>
+The model is 200 lines of code. The vocabulary is the creative part. Each new vocabulary = a new atom. Each new atom = a new sense. Connect enough senses through Nerve and the system develops something that looks a lot like understanding.
+</div>
+
+<h3>What Could You Build?</h3>
+<p>Anyone with a computer and Python 3 can train an atom on their own data. No cloud. No API keys. No cost. The model runs locally, learns locally, and stays local. Some ideas:</p>
+
+<div class="grid2">
+<div class="card">
+<h4>Home</h4>
+<p>Power consumption patterns. Water usage anomaly detection. Temperature/humidity tracking. Appliance health monitoring. Garden soil moisture sequences.</p>
+</div>
+<div class="card">
+<h4>Workshop / Factory</h4>
+<p>Motor vibration patterns. Tool usage sequences. Production line timing anomalies. Quality metrics trending. Equipment bearing wear prediction.</p>
+</div>
+<div class="card">
+<h4>Agriculture</h4>
+<p>Soil sensor sequences. Pump current and vibration. Irrigation flow rates. Weather pattern correlation. Crop growth stage tracking.</p>
+</div>
+<div class="card">
+<h4>Community Infrastructure</h4>
+<p>Water pressure and flow monitoring. Solar inverter output patterns. Network uptime tracking. Shared resource utilization. Environmental monitoring stations.</p>
+</div>
+</div>
+
+</div>
+
+<div class="foot">KIRI &mdash; an Eryx Labs project</div>
+
+</div><!-- /w -->
+
+<script>
+// --- Tab switching ---
+document.getElementById('tabs').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('on'));
+  e.target.classList.add('on');
+  const t = e.target.dataset.t;
+  document.getElementById(t).classList.add('on');
+  window.scrollTo({top: document.getElementById('tabs').offsetTop - 50, behavior: 'smooth'});
+  if (t === 'live') lPoll();
+  if (t === 'code') drawCodeCanvases();
+});
+
+// --- Code step-through ---
+let cStep = 0;
+const totalSteps = 7;
+
+function initStepDots() {
+  const dots = document.getElementById('stepDots');
+  dots.innerHTML = '';
+  for (let i = 0; i < totalSteps; i++) {
+    const d = document.createElement('span');
+    if (i === 0) d.classList.add('on');
+    dots.appendChild(d);
+  }
+}
+initStepDots();
+
+function showStep(n) {
+  cStep = Math.max(0, Math.min(totalSteps - 1, n));
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('on'));
+  document.querySelectorAll(`.step[data-step="${cStep}"]`).forEach(s => s.classList.add('on'));
+  document.getElementById('stepCounter').textContent = `${cStep + 1} / ${totalSteps}`;
+  document.getElementById('prevBtn').disabled = cStep === 0;
+  document.getElementById('nextBtn').disabled = cStep === totalSteps - 1;
+  document.querySelectorAll('#stepDots span').forEach((d, i) => d.classList.toggle('on', i === cStep));
+  drawCodeCanvases();
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => showStep(cStep - 1));
+document.getElementById('nextBtn').addEventListener('click', () => showStep(cStep + 1));
+
+// --- Canvas helpers ---
+function setupCanvas(id, h) {
+  const cv = document.getElementById(id);
+  if (!cv) return null;
+  const dpr = devicePixelRatio || 1;
+  cv.width = cv.clientWidth * dpr;
+  cv.height = (h || cv.clientHeight) * dpr;
+  cv.style.height = (h || cv.clientHeight) + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, cv.clientWidth, h || cv.clientHeight);
+  return {ctx, W: cv.clientWidth, H: h || cv.clientHeight};
+}
+
+function drawCodeCanvases() {
+  // Tokenizer canvas (step 0)
+  {
+    const c = setupCanvas('cvTokenizer', 100);
+    if (c) {
+      const {ctx, W, H} = c;
+      const tokens = ['C5','M7','D4','S1','L1','N1'];
+      const values = [52, 73, 40, 12, 3.5, 1];
+      const colors = ['#16a34a','#2563eb','#b45309','#7c3aed','#0891b2','#16a34a'];
+      const bw = Math.min(80, (W - 40) / tokens.length - 8);
+      const startX = (W - tokens.length * (bw + 8)) / 2;
+
+      ctx.font = '10px IBM Plex Mono';
+      ctx.textAlign = 'center';
+      for (let i = 0; i < tokens.length; i++) {
+        const x = startX + i * (bw + 8);
+        // Value
+        ctx.fillStyle = '#666670';
+        ctx.fillText(values[i] + (i < 5 ? '%' : ''), x + bw/2, 18);
+        // Arrow
+        ctx.strokeStyle = '#d0d0c8';
+        ctx.beginPath(); ctx.moveTo(x + bw/2, 24); ctx.lineTo(x + bw/2, 40); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + bw/2 - 3, 36); ctx.lineTo(x + bw/2, 42); ctx.lineTo(x + bw/2 + 3, 36); ctx.fill();
+        // Token box
+        ctx.fillStyle = colors[i] + '18';
+        ctx.strokeStyle = colors[i];
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect(x, 46, bw, 28, 4); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = colors[i];
+        ctx.font = '12px IBM Plex Mono';
+        ctx.fillText(tokens[i], x + bw/2, 64);
+        ctx.font = '10px IBM Plex Mono';
+      }
+      // Label
+      ctx.fillStyle = '#666670';
+      ctx.font = '9px IBM Plex Mono';
+      ctx.fillText('continuous values  →  discrete tokens', W/2, 92);
+    }
+  }
+
+  // Autograd canvas (step 1)
+  {
+    const c = setupCanvas('cvAutograd', 140);
+    if (c) {
+      const {ctx, W, H} = c;
+      const nodes = [
+        {x: W*0.15, y: 40, label: 'a=2.0', col: '#2563eb'},
+        {x: W*0.15, y: 100, label: 'b=3.0', col: '#2563eb'},
+        {x: W*0.42, y: 70, label: 'c=a*b=6.0', col: '#7c3aed'},
+        {x: W*0.7, y: 40, label: 'd=1.0', col: '#2563eb'},
+        {x: W*0.85, y: 70, label: 'L=c+d=7.0', col: '#dc2626'},
+      ];
+      // Edges
+      ctx.strokeStyle = '#d0d0c8'; ctx.lineWidth = 1;
+      [[0,2],[1,2],[2,4],[3,4]].forEach(([f,t]) => {
+        ctx.beginPath(); ctx.moveTo(nodes[f].x, nodes[f].y); ctx.lineTo(nodes[t].x, nodes[t].y); ctx.stroke();
+      });
+      // Nodes
+      nodes.forEach(n => {
+        ctx.fillStyle = n.col + '18';
+        ctx.strokeStyle = n.col;
+        ctx.beginPath(); ctx.roundRect(n.x - 42, n.y - 12, 84, 24, 4); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = n.col;
+        ctx.font = '10px IBM Plex Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText(n.label, n.x, n.y + 4);
+      });
+      // Grad labels
+      ctx.font = '9px IBM Plex Mono';
+      ctx.fillStyle = '#16a34a';
+      ctx.fillText('grad=3.0', nodes[0].x, nodes[0].y - 18);
+      ctx.fillText('grad=2.0', nodes[1].x, nodes[1].y + 22);
+      ctx.fillText('grad=1.0', nodes[2].x, nodes[2].y - 18);
+      ctx.fillText('grad=1.0', nodes[3].x, nodes[3].y - 18);
+      ctx.fillText('grad=1.0', nodes[4].x, nodes[4].y - 18);
+
+      ctx.fillStyle = '#666670';
+      ctx.font = '8px IBM Plex Mono';
+      ctx.fillText('backward: grad flows right-to-left via chain rule', W/2, H - 6);
+    }
+  }
+
+  // Forward pass canvas (step 3)
+  {
+    const c = setupCanvas('cvForward', 200);
+    if (c) {
+      const {ctx, W, H} = c;
+      const stages = [
+        {label: 'Token\nEmbed', col: '#16a34a', y: 20},
+        {label: '+\nPos Embed', col: '#2563eb', y: 20},
+        {label: 'RMS\nNorm', col: '#666670', y: 20},
+        {label: 'Multi-Head\nAttention', col: '#7c3aed', y: 20},
+        {label: '+ Residual', col: '#666670', y: 20},
+        {label: 'MLP\n(ReLU)', col: '#b45309', y: 20},
+        {label: '+ Residual', col: '#666670', y: 20},
+        {label: 'lm_head\n→ logits', col: '#dc2626', y: 20},
+      ];
+      const bw = Math.min(90, (W - 20) / stages.length - 6);
+      const startX = (W - stages.length * (bw + 6)) / 2;
+      const cy = H / 2;
+
+      for (let i = 0; i < stages.length; i++) {
+        const x = startX + i * (bw + 6);
+        const s = stages[i];
+        // Box
+        ctx.fillStyle = s.col + '12';
+        ctx.strokeStyle = s.col;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect(x, cy - 24, bw, 48, 4); ctx.fill(); ctx.stroke();
+        // Label
+        ctx.fillStyle = s.col;
+        ctx.font = '9px IBM Plex Mono';
+        ctx.textAlign = 'center';
+        const lines = s.label.split('\n');
+        lines.forEach((l, li) => ctx.fillText(l, x + bw/2, cy - 6 + li * 14));
+        // Arrow
+        if (i < stages.length - 1) {
+          ctx.strokeStyle = '#d0d0c8';
+          ctx.beginPath(); ctx.moveTo(x + bw + 1, cy); ctx.lineTo(x + bw + 5, cy); ctx.stroke();
+        }
+      }
+
+      // Layer bracket
+      ctx.strokeStyle = '#7c3aed40';
+      ctx.setLineDash([3,3]);
+      ctx.beginPath();
+      const lx = startX + 2 * (bw + 6) - 3;
+      const lw = 5 * (bw + 6) + 6;
+      ctx.roundRect(lx, cy - 34, lw, 68, 6);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#7c3aed';
+      ctx.font = '8px IBM Plex Mono';
+      ctx.fillText('× 2 layers', lx + lw/2, cy + 46);
+
+      // Input/output
+      ctx.fillStyle = '#16a34a';
+      ctx.font = '10px IBM Plex Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText('C5', startX - 2, cy - 32);
+      ctx.fillStyle = '#dc2626';
+      ctx.textAlign = 'right';
+      ctx.fillText('P(M?) = softmax(logits)', W - startX + 2, cy - 32);
+    }
+  }
+
+  // Vocab comparison canvas (step 6)
+  {
+    const c = setupCanvas('cvVocab', 120);
+    if (c) {
+      const {ctx, W, H} = c;
+      const mid = W / 2;
+      // Left: English
+      ctx.fillStyle = '#2563eb18';
+      ctx.strokeStyle = '#2563eb';
+      ctx.beginPath(); ctx.roundRect(20, 15, mid - 40, 90, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#2563eb';
+      ctx.font = '11px IBM Plex Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('microgpt', mid/2 + 10, 36);
+      ctx.font = '10px IBM Plex Mono';
+      ctx.fillStyle = '#666670';
+      ctx.fillText('a b c ... z BOS', mid/2 + 10, 56);
+      ctx.fillText('27 tokens', mid/2 + 10, 72);
+      ctx.fillStyle = '#2563eb';
+      ctx.fillText('"emma" → "e" "m" "m" "a"', mid/2 + 10, 92);
+
+      // Right: State
+      ctx.fillStyle = '#16a34a18';
+      ctx.strokeStyle = '#16a34a';
+      ctx.beginPath(); ctx.roundRect(mid + 20, 15, mid - 40, 90, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#16a34a';
+      ctx.font = '11px IBM Plex Mono';
+      ctx.fillText('KIRI Atom', mid + mid/2 - 10, 36);
+      ctx.font = '10px IBM Plex Mono';
+      ctx.fillStyle = '#666670';
+      ctx.fillText('C0..C9 M0..M9 ... BOS', mid + mid/2 - 10, 56);
+      ctx.fillText('43 tokens', mid + mid/2 - 10, 72);
+      ctx.fillStyle = '#16a34a';
+      ctx.fillText('C5 M7 D4 S1 L1 N1', mid + mid/2 - 10, 92);
+
+      // Equals
+      ctx.fillStyle = '#b45309';
+      ctx.font = '16px IBM Plex Mono';
+      ctx.fillText('=', mid, 60);
+      ctx.font = '9px IBM Plex Mono';
+      ctx.fillText('same math', mid, 76);
+    }
+  }
+}
+
+// Draw on load
+setTimeout(drawCodeCanvases, 100);
+window.addEventListener('resize', drawCodeCanvases);
+
+// ==========================================================
+// TAB 3: LIVE SYSTEM
+// ==========================================================
+const API = 'http://localhost:7745';
+let lHAtom = 'pulse', lHData = [], lTLosses = [], lPollTimer = null;
+
+const PDEF = [
+  {k:'C',l:'CPU',u:'%',mx:100,w:50,c:80},
+  {k:'M',l:'MEM',u:'%',mx:100,w:70,c:85},
+  {k:'D',l:'DISK',u:'%',mx:100,w:70,c:85},
+  {k:'S',l:'SWAP',u:'%',mx:100,w:50,c:80},
+  {k:'L',l:'LOAD',u:'',mx:20,w:5,c:10},
+];
+const RDEF = [
+  {k:'I',l:'IDLE',u:'s',mx:3600,w:1800,c:3000},
+  {k:'A',l:'ACT',u:'/m',mx:60,w:0,c:0},
+];
+
+function sColor(s) { return s < 2 ? 'var(--g)' : s < 5 ? 'var(--a)' : 'var(--r)'; }
+function fmt(v) { return typeof v === 'number' ? (v < 10 ? v.toFixed(1) : Math.round(v)) : v; }
+
+function renderM(el, defs, m) {
+  let h = '';
+  for (const d of defs) {
+    const v = m[d.k] ?? 0, pct = Math.min(100, (v / d.mx) * 100);
+    const col = d.c > 0 && v >= d.c ? 'var(--r)' : d.w > 0 && v >= d.w ? 'var(--a)' : 'var(--g)';
+    h += `<div class="mrow"><span class="mlabel">${d.l}</span><div class="mbar"><div class="mfill" style="width:${pct}%;background:${col}"></div></div><span class="mval" style="color:${col}">${fmt(v)}${d.u}</span></div>`;
+  }
+  if (m.N !== undefined) {
+    const up = m.N === 1;
+    h += `<div class="mrow"><span class="mlabel">NET</span><span style="color:${up ? 'var(--g)' : 'var(--r)'};font-size:13px">&bull; ${up ? 'UP' : 'DOWN'}</span></div>`;
+  }
+  el.innerHTML = h;
+}
+
+function renderTok(el, pt) {
+  el.innerHTML = Object.entries(pt || {}).map(([t, s]) => {
+    const c = sColor(s);
+    return `<span class="tok" style="border-color:${c};color:${c}">${t}</span>`;
+  }).join('');
+}
+
+function updateAtom(pfx, d) {
+  const sc = document.getElementById(pfx + 'Score');
+  const vd = document.getElementById(pfx + 'Verdict');
+  const tk = document.getElementById(pfx + 'Tokens');
+  const c = sColor(d.score);
+  sc.textContent = d.score.toFixed(2); sc.style.color = c;
+  vd.textContent = d.verdict; vd.className = 'verdict ' + d.verdict;
+  renderTok(tk, d.per_token);
+}
+
+async function lPoll() {
+  try {
+    const r = await fetch(API + '/api/status');
+    const d = await r.json();
+    document.getElementById('liveOffline').style.display = 'none';
+    document.getElementById('liveContent').style.display = 'block';
+    renderM(document.getElementById('lPulseMetrics'), PDEF, d.pulse.metrics);
+    renderM(document.getElementById('lRhythmMetrics'), RDEF, d.rhythm.metrics);
+    updateAtom('lP', d.pulse);
+    updateAtom('lR', d.rhythm);
+  } catch (e) {
+    document.getElementById('liveOffline').style.display = 'block';
+    document.getElementById('liveContent').style.display = 'none';
+  }
+  if (document.getElementById('live').classList.contains('on')) {
+    clearTimeout(lPollTimer);
+    lPollTimer = setTimeout(lPoll, 2000);
+  }
+}
+
+async function lLoadHist(atom) {
+  lHAtom = atom || lHAtom;
+  document.getElementById('lHPBtn').style.borderColor = lHAtom === 'pulse' ? 'var(--g)' : 'var(--bdr)';
+  document.getElementById('lHRBtn').style.borderColor = lHAtom === 'rhythm' ? 'var(--b)' : 'var(--bdr)';
+  try {
+    const r = await fetch(`${API}/api/history?n=200&atom=${lHAtom}`);
+    lHData = await r.json();
+    drawLiveHist();
+    drawLiveSpark();
+  } catch (e) {}
+}
+
+function drawLiveHist() {
+  const c = setupCanvas('lHistC', 180);
+  if (!c) return;
+  const {ctx, W, H} = c;
+  if (!lHData.length) {
+    ctx.fillStyle = '#666670'; ctx.font = '12px IBM Plex Mono'; ctx.textAlign = 'center';
+    ctx.fillText('no history data', W/2, H/2);
+    return;
+  }
+  const sc = lHData.map(d => d.score), mx = Math.max(8, ...sc) * 1.1;
+  const p = {t: 10, r: 10, b: 20, l: 40}, cw = W - p.l - p.r, ch = H - p.t - p.b;
+
+  // Threshold line
+  const ty = p.t + ch * (1 - 2/mx);
+  ctx.strokeStyle = 'rgba(180,83,9,.3)'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(p.l, ty); ctx.lineTo(W - p.r, ty); ctx.stroke(); ctx.setLineDash([]);
+
+  // Y axis
+  ctx.fillStyle = '#666670'; ctx.font = '9px IBM Plex Mono'; ctx.textAlign = 'right';
+  for (let s = 0; s <= mx; s += 2) {
+    const y = p.t + ch * (1 - s/mx); ctx.fillText(s.toFixed(0), p.l - 4, y + 3);
+  }
+
+  // Line
+  ctx.beginPath();
+  for (let i = 0; i < sc.length; i++) {
+    const x = p.l + (i / Math.max(1, sc.length - 1)) * cw, y = p.t + ch * (1 - sc[i]/mx);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = lHAtom === 'pulse' ? 'rgba(22,163,74,.5)' : 'rgba(37,99,235,.5)';
+  ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Dots
+  for (let i = 0; i < sc.length; i++) {
+    const x = p.l + (i / Math.max(1, sc.length - 1)) * cw, y = p.t + ch * (1 - sc[i]/mx);
+    ctx.fillStyle = sc[i] >= 5 ? '#dc2626' : sc[i] >= 2 ? '#b45309' : (lHAtom === 'pulse' ? '#16a34a' : '#2563eb');
+    ctx.beginPath(); ctx.arc(x, y, sc[i] >= 2 ? 2.5 : 1.5, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawLiveSpark() {
+  const el = document.getElementById('lSparklines');
+  if (!lHData.length) { el.innerHTML = ''; return; }
+  const keys = lHAtom === 'pulse' ? ['C','M','D','S','L'] : ['I','A'];
+  const colors = {C:'var(--g)',M:'var(--b)',D:'var(--a)',S:'var(--p)',L:'var(--c)',I:'var(--b)',A:'var(--g)'};
+  const maxes = {C:100,M:100,D:100,S:100,L:20,I:3600,A:60};
+  const step = Math.max(1, Math.floor(lHData.length / 40));
+  let html = '';
+  for (const k of keys) {
+    html += `<div class="spark-item"><span class="spark-label">${k}</span><div class="spark-bars">`;
+    for (let i = 0; i < lHData.length; i += step) {
+      const v = lHData[i].metrics?.[k] ?? 0, pct = Math.max(2, Math.min(100, (v / (maxes[k] || 1)) * 100));
+      html += `<div class="spark-bar" style="height:${pct}%;background:${colors[k] || 'var(--dim)'}"></div>`;
+    }
+    html += `</div></div>`;
+  }
+  el.innerHTML = html;
+}
+
+async function lRetrain(atom) {
+  const steps = parseInt(document.getElementById('lStepsIn').value) || 300;
+  document.getElementById('lBtnP').disabled = document.getElementById('lBtnR').disabled = true;
+  document.getElementById('lTrainStatus').textContent = 'training ' + atom + '...';
+  lTLosses = [];
+  try {
+    const r = await fetch(`${API}/api/train?atom=${atom}&steps=${steps}`, {method: 'POST'});
+    const reader = r.body.getReader(), dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream: true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const d = JSON.parse(line);
+          if (d.error) document.getElementById('lTrainStatus').innerHTML = `<span style="color:var(--r)">error: ${d.error}</span>`;
+          else if (d.step) {
+            lTLosses.push(d);
+            drawLiveLoss();
+            document.getElementById('lTrainStatus').textContent = `${atom} \u00b7 step ${d.step}/${d.total} \u00b7 loss ${d.loss.toFixed(3)}`;
+          }
+          else if (d.done) {
+            document.getElementById('lTrainStatus').innerHTML = `<span style="color:var(--g)">done \u00b7 ${d.steps} steps \u00b7 final loss ${d.final_loss.toFixed(3)}</span>`;
+          }
+        } catch (pe) {}
+      }
+    }
+  } catch (e) {
+    document.getElementById('lTrainStatus').innerHTML = `<span style="color:var(--r)">failed: ${e.message}</span>`;
+  }
+  document.getElementById('lBtnP').disabled = document.getElementById('lBtnR').disabled = false;
+}
+
+function drawLiveLoss() {
+  const c = setupCanvas('lLossC', 160);
+  if (!c || !lTLosses.length) return;
+  const {ctx, W, H} = c;
+  const ls = lTLosses.map(d => d.loss), mx = Math.max(...ls) * 1.1;
+  const p = {t: 8, r: 8, b: 18, l: 40}, cw = W - p.l - p.r, ch = H - p.t - p.b;
+
+  ctx.strokeStyle = 'rgba(102,102,112,.15)';
+  for (let l = 0; l <= mx; l += 0.5) {
+    const y = p.t + ch * (1 - l/mx);
+    ctx.beginPath(); ctx.moveTo(p.l, y); ctx.lineTo(W - p.r, y); ctx.stroke();
+  }
+  ctx.fillStyle = '#666670'; ctx.font = '9px IBM Plex Mono'; ctx.textAlign = 'right';
+  for (let l = 0; l <= mx; l += 1) {
+    const y = p.t + ch * (1 - l/mx); ctx.fillText(l.toFixed(1), p.l - 4, y + 3);
+  }
+  ctx.beginPath();
+  for (let i = 0; i < ls.length; i++) {
+    const x = p.l + (i / Math.max(1, ls.length - 1)) * cw, y = p.t + ch * (1 - ls[i]/mx);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#b45309'; ctx.lineWidth = 1.5; ctx.stroke();
+  const tot = lTLosses[lTLosses.length - 1]?.total || ls.length;
+  ctx.fillStyle = '#666670'; ctx.font = '9px IBM Plex Mono'; ctx.textAlign = 'center';
+  ctx.fillText(`step ${ls.length}/${tot}`, W/2, H - 3);
+}
+
+// Start live poll if tab is active
+setTimeout(() => {
+  if (document.getElementById('live').classList.contains('on')) lPoll();
+}, 500);
+</script>
+</body>
+</html>

@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIRI — Hardware Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fafaf8;--s1:#ffffff;--s2:#f2f2ee;--bdr:#e0e0d8;
+  --tx:#1a1a1a;--dim:#666670;--g:#16a34a;--a:#b45309;--r:#dc2626;
+  --b:#2563eb;--p:#7c3aed;--c:#0891b2;
+  --sans:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;--hd:'Newsreader',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:15px;line-height:1.75}
+a{color:var(--g);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Top bar */
+.topbar{border-bottom:1px solid var(--bdr);padding:12px 24px;display:flex;align-items:center;gap:16px;font-family:var(--mono);font-size:12px;position:sticky;top:0;background:var(--bg);z-index:100}
+.topbar .brand{font-weight:500;color:var(--tx);letter-spacing:1px}
+.topbar a{color:var(--dim);font-size:11px}
+.topbar a:hover{color:var(--g)}
+.topbar .sep{color:var(--bdr)}
+
+/* Wrapper */
+.w{max-width:920px;margin:0 auto;padding:40px 24px 100px}
+
+/* Hero */
+.hero{margin-bottom:40px}
+.hero .label{font-family:var(--mono);font-size:10px;color:var(--g);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+.hero h1{font-family:var(--hd);font-size:42px;font-weight:500;line-height:1.15;letter-spacing:-0.5px;margin-bottom:10px}
+.hero h1 em{font-style:italic;color:var(--g)}
+.hero p{color:var(--dim);font-size:15px;max-width:640px;font-weight:300}
+
+/* Typography */
+h2{font-family:var(--hd);font-size:28px;font-weight:500;margin:48px 0 12px;letter-spacing:-0.3px}
+h2:first-child{margin-top:0}
+h3{font-family:var(--mono);font-size:10px;color:var(--g);letter-spacing:2px;text-transform:uppercase;margin:28px 0 10px;font-weight:500}
+h4{font-size:16px;font-weight:500;margin:16px 0 6px}
+p{color:var(--dim);margin-bottom:12px;font-weight:300}
+p strong{color:var(--tx);font-weight:500}
+
+/* Code */
+.code{background:#1a1a2e;color:#d8d5cf;border-radius:6px;padding:16px 20px;margin:14px 0;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.8}
+.code .g{color:#4ade80}.code .b{color:#60a5fa}.code .a{color:#fbbf24}.code .r{color:#f87171}.code .p{color:#c084fc}.code .c{color:#22d3ee}.code .d{color:#888}
+
+/* Callout */
+.co{border-left:3px solid;padding:12px 16px;margin:14px 0;font-size:14px;border-radius:0 4px 4px 0}
+.cog{border-color:var(--g);background:rgba(22,163,74,.06)}
+.coa{border-color:var(--a);background:rgba(180,83,9,.06)}
+.cob{border-color:var(--b);background:rgba(37,99,235,.06)}
+.cop{border-color:var(--p);background:rgba(124,58,237,.06)}
+.cor{border-color:var(--r);background:rgba(220,38,38,.06)}
+
+/* Card */
+.card{background:var(--s1);border:1px solid var(--bdr);border-radius:6px;padding:20px;margin:14px 0}
+.card h4{margin-top:0}
+
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:13px;margin:14px 0}
+th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--bdr);font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:500}
+td{padding:8px 10px;border-bottom:1px solid var(--bdr)}
+
+/* Grid */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:700px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* Canvas */
+canvas{width:100%;border:1px solid var(--bdr);border-radius:6px;background:var(--s1)}
+
+/* BOM table */
+.bom td:nth-child(3),.bom th:nth-child(3){text-align:right}
+
+/* Steps */
+.step-card{background:var(--s1);border:1px solid var(--bdr);border-radius:6px;padding:20px;margin:14px 0;border-left:3px solid var(--g);counter-increment:step-counter}
+.step-card h4{margin-top:0}
+.step-card h4::before{content:counter(step-counter)'. ';color:var(--g);font-family:var(--mono)}
+.steps{counter-reset:step-counter}
+
+/* App card */
+.app-card{background:var(--s1);border:1px solid var(--bdr);border-radius:6px;padding:20px;margin:0}
+.app-card h4{margin-top:0;font-size:14px}
+.app-card p{font-size:13px;margin-bottom:0}
+.app-icon{font-size:20px;margin-bottom:6px}
+
+/* Footer */
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--bdr);text-align:center;color:var(--dim);font-size:11px;font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">KIRI</span>
+  <span class="sep">/</span>
+  <a href="../index.html">home</a>
+  <span class="sep">/</span>
+  <a href="../monitor.html">monitor</a>
+  <span class="sep">/</span>
+  <a href="../walkthrough.html">walkthrough</a>
+  <span class="sep">/</span>
+  <a href="understand.html">learn everything</a>
+  <span class="sep">/</span>
+  <span style="color:var(--tx);font-size:11px">hardware</span>
+</div>
+
+<div class="w">
+
+<div class="hero">
+  <div class="label">research &middot; hardware</div>
+  <h1>KIRI on <em>Hardware</em></h1>
+  <p>A Pulse atom is 27,840 numbers. An ESP32-S3 has room for 131,000. The forward pass is multiply-and-add. A $3 microcontroller and 200 lines of C.</p>
+</div>
+
+<!-- ===== THE SHORT ANSWER ===== -->
+<h2>The Short Answer</h2>
+<p>Can a tiny transformer run on a microcontroller? <strong>Yes, with massive headroom.</strong></p>
+
+<div class="card">
+<table>
+<tr><th>What</th><th>Number</th><th>Why it matters</th></tr>
+<tr><td>Pulse atom parameters</td><td><strong>27,840</strong></td><td>Each is an int16 = 55,680 bytes = 54 KB</td></tr>
+<tr><td>ESP32-S3 SRAM</td><td><strong>512 KB</strong></td><td>55 KB model + scratch space = fits 9&times; over</td></tr>
+<tr><td>Forward pass operations</td><td><strong>~200 cycles</strong></td><td>Matrix multiply + add. No division, no transcendentals in critical path</td></tr>
+<tr><td>Inference time (240 MHz)</td><td><strong>&lt;1 ms</strong></td><td>Score one observation in under a millisecond</td></tr>
+<tr><td>Chip cost</td><td><strong>~$3</strong></td><td>ESP32-S3-WROOM-1 module, volume pricing</td></tr>
+</table>
+</div>
+
+<div class="co cog"><strong>The entire model fits in SRAM.</strong> No external memory, no SD card, no flash reads during inference. All 27,840 weights sit in RAM. The forward pass is pure arithmetic on numbers already in memory. This is why tiny models matter for hardware.</div>
+
+<!-- ===== THE COMPLETE CIRCUIT ===== -->
+<h2>The Complete Circuit</h2>
+<p>A transformer, viewed as hardware. Every software operation maps to a hardware unit. The CPU in the ESP32 already has all of these.</p>
+
+<canvas id="cvCircuit" height="320"></canvas>
+
+<h3>Hardware Units</h3>
+<table>
+<tr><th>Unit</th><th>Software Operation</th><th>Hardware</th><th>Cycles</th></tr>
+<tr><td style="color:var(--g)"><strong>SRAM</strong></td><td>Weight storage (wte, wpe, layers)</td><td>On-chip SRAM bank</td><td>1 (read)</td></tr>
+<tr><td style="color:var(--b)"><strong>MAC Array</strong></td><td>Matrix multiply (linear layers)</td><td>Multiply-accumulate unit</td><td>N&times;M per matrix</td></tr>
+<tr><td style="color:var(--a)"><strong>ReLU Comparator</strong></td><td>max(0, x)</td><td>Single comparison + mux</td><td>1</td></tr>
+<tr><td style="color:var(--p)"><strong>Softmax LUT</strong></td><td>exp(x) / sum(exp)</td><td>Lookup table + accumulator</td><td>V (vocab size)</td></tr>
+<tr><td style="color:var(--c)"><strong>RMSNorm</strong></td><td>x / sqrt(mean(x&sup2;))</td><td>Accumulator + reciprocal sqrt</td><td>N (embed dim)</td></tr>
+<tr><td style="color:var(--r)"><strong>Sequencer</strong></td><td>Token-by-token processing loop</td><td>State machine controller</td><td>1 per token</td></tr>
+<tr><td><strong>I/O</strong></td><td>Sensor read + score output</td><td>ADC/I2C/SPI + UART/LED</td><td>Variable</td></tr>
+</table>
+
+<h3>Execution Timeline (One Token)</h3>
+<div class="code"><pre><span class="d">// Processing one token through the Pulse atom (2 layers, 32-dim, 4 heads):</span>
+
+<span class="g">1. Embedding lookup</span>         2 reads &times; 32 dims          = 64 ops
+<span class="g">2. RMSNorm</span>                  32 multiply + 32 add + sqrt  = ~70 ops
+<span class="b">3. Attention Q,K,V</span>          3 &times; (32&times;32 MAC)             = 3,072 ops
+<span class="b">4. Score + softmax</span>          4 heads &times; T scores           = ~128 ops
+<span class="b">5. Weighted sum + O proj</span>    32&times;32 MAC                    = 1,024 ops
+<span class="g">6. Residual add</span>             32 adds                       = 32 ops
+<span class="a">7. MLP (expand + ReLU)</span>      128&times;32 MAC + 128 relu         = 4,224 ops
+<span class="a">8. MLP (compress)</span>           32&times;128 MAC                    = 4,096 ops
+<span class="g">9. Residual add</span>             32 adds                       = 32 ops
+<span class="p">10. &times;2 layers</span>              (steps 2-9) &times; 2              = &times;2
+<span class="r">11. lm_head + softmax</span>       43&times;32 MAC + 43 exp           = 1,419 ops
+<span class="d">────────────────────────────────────────────────────────</span>
+<span class="g">Total: ~27,000 operations per token, ~160,000 for a 6-token sequence</span>
+<span class="d">At 240 MHz (ESP32-S3): &lt;1 ms inference time</span></pre></div>
+
+<!-- ===== ESP32-S3 FIT TABLE ===== -->
+<h2>ESP32-S3 Fit Analysis</h2>
+<p>Detailed breakdown of whether the Pulse atom fits on an ESP32-S3-WROOM-1 module.</p>
+
+<table>
+<tr><th>Resource</th><th>Available</th><th>Required</th><th>Headroom</th></tr>
+<tr><td><strong>SRAM</strong></td><td>512 KB</td><td>~55 KB (weights as int16)</td><td style="color:var(--g)"><strong>9.3&times;</strong></td></tr>
+<tr><td><strong>Flash</strong></td><td>4&ndash;16 MB</td><td>~56 KB (weight file)</td><td style="color:var(--g)"><strong>70&times;+</strong></td></tr>
+<tr><td><strong>Clock</strong></td><td>240 MHz (Xtensa LX7)</td><td>~160K ops per inference</td><td style="color:var(--g)"><strong>&lt;1 ms</strong></td></tr>
+<tr><td><strong>RAM (scratch)</strong></td><td>~400 KB free after OS</td><td>~8 KB (intermediates + KV cache)</td><td style="color:var(--g)"><strong>50&times;</strong></td></tr>
+<tr><td><strong>Power</strong></td><td>3.3V, ~240 mA active</td><td>Inference burst &lt;1 ms</td><td style="color:var(--g)"><strong>Sleep between readings</strong></td></tr>
+<tr><td><strong>Cost</strong></td><td>&mdash;</td><td>~$3 (module)</td><td style="color:var(--g)"><strong>$8&ndash;15 total BOM</strong></td></tr>
+</table>
+
+<div class="co cob"><strong>The model is 1/9th of available SRAM.</strong> You could fit 9 Pulse atoms, or 3 different atoms (Pulse + Rhythm + Drift) with room to spare. The ESP32-S3 also has WiFi and Bluetooth, so it can phone home with anomaly scores.</div>
+
+<!-- ===== PCB DESIGN ===== -->
+<h2>PCB Design</h2>
+<p>A real board layout for a KIRI sensor node. 4-layer PCB, 50mm &times; 35mm.</p>
+
+<canvas id="cvPCB" height="340"></canvas>
+
+<h3>Bill of Materials</h3>
+<table class="bom">
+<tr><th>Component</th><th>Part</th><th>Est. Cost</th></tr>
+<tr><td>MCU Module</td><td>ESP32-S3-WROOM-1 (4MB flash)</td><td>$3.00</td></tr>
+<tr><td>USB-C Connector</td><td>USB-C 2.0 receptacle</td><td>$0.30</td></tr>
+<tr><td>Voltage Regulator</td><td>AMS1117-3.3 (SOT-223)</td><td>$0.15</td></tr>
+<tr><td>Status LEDs (3x)</td><td>0603 Green/Amber/Red</td><td>$0.10</td></tr>
+<tr><td>Resistors (6x)</td><td>0603 assorted</td><td>$0.05</td></tr>
+<tr><td>Capacitors (4x)</td><td>0603 100nF + 10&mu;F</td><td>$0.10</td></tr>
+<tr><td>Sensor Headers</td><td>2.54mm 2x4 pin header</td><td>$0.20</td></tr>
+<tr><td>PCB</td><td>4-layer, 50&times;35mm (5 pcs)</td><td>$1.50</td></tr>
+<tr style="font-weight:600"><td>Total</td><td></td><td style="color:var(--g)">~$5.40</td></tr>
+</table>
+
+<div class="co coa"><strong>Under $6 per node.</strong> At volume (100+), the PCB cost drops to ~$0.50 and component costs drop further. A 10-node deployment for monitoring an entire site costs less than a month of any cloud monitoring subscription.</div>
+
+<!-- ===== C FIRMWARE ===== -->
+<h2>The C Firmware</h2>
+<p>The forward pass in C. Fixed-point int16 arithmetic &mdash; no floating point needed. Train on computer (Python), export weights as binary, flash to ESP32.</p>
+
+<div class="code"><pre><span class="d">// kiri_atom.h — Fixed-point transformer forward pass</span>
+<span class="d">// Weights are int16_t, scaled by 2^10 (10 fractional bits)</span>
+
+#include &lt;stdint.h&gt;
+
+<span class="p">#define N_EMBD    32</span>
+<span class="p">#define N_HEAD    4</span>
+<span class="p">#define N_LAYER   2</span>
+<span class="p">#define VOCAB     43</span>
+<span class="p">#define BLOCK_SZ  16</span>
+<span class="p">#define HEAD_DIM  (N_EMBD / N_HEAD)</span>  <span class="d">// 8</span>
+<span class="p">#define FRAC_BITS 10</span>
+<span class="p">#define SCALE     (1 << FRAC_BITS)</span>    <span class="d">// 1024</span>
+
+<span class="d">// Weight matrices (stored in flash, loaded to SRAM on boot)</span>
+typedef struct {
+    int16_t wte[VOCAB][N_EMBD];          <span class="d">// 43 &times; 32 = 1,376</span>
+    int16_t wpe[BLOCK_SZ][N_EMBD];      <span class="d">// 16 &times; 32 = 512</span>
+    int16_t lm_head[VOCAB][N_EMBD];     <span class="d">// 43 &times; 32 = 1,376</span>
+    <span class="d">// Per layer: wq, wk, wv, wo, f1, f2</span>
+    int16_t wq[N_LAYER][N_EMBD][N_EMBD];
+    int16_t wk[N_LAYER][N_EMBD][N_EMBD];
+    int16_t wv[N_LAYER][N_EMBD][N_EMBD];
+    int16_t wo[N_LAYER][N_EMBD][N_EMBD];
+    int16_t f1[N_LAYER][4*N_EMBD][N_EMBD];
+    int16_t f2[N_LAYER][N_EMBD][4*N_EMBD];
+} <span class="g">AtomWeights</span>;
+
+<span class="d">// Fixed-point linear layer: out[nout] = W[nout][nin] @ x[nin]</span>
+static void <span class="b">linear</span>(int32_t *out, const int16_t *W,
+                   const int32_t *x, int nout, int nin) {
+    for (int i = 0; i &lt; nout; i++) {
+        int32_t acc = 0;
+        for (int j = 0; j &lt; nin; j++) {
+            acc += (int32_t)W[i * nin + j] * (x[j] >> (FRAC_BITS/2));
+        }
+        out[i] = acc >> (FRAC_BITS/2);  <span class="d">// keep in Q10 range</span>
+    }
+}
+
+<span class="d">// ReLU: max(0, x)</span>
+static void <span class="a">relu</span>(int32_t *x, int n) {
+    for (int i = 0; i &lt; n; i++)
+        if (x[i] &lt; 0) x[i] = 0;
+}
+
+<span class="d">// Score one observation: returns anomaly score (fixed-point)</span>
+int32_t <span class="g">atom_score</span>(const AtomWeights *w, const uint8_t *tokens, int n_tokens) {
+    int32_t x[N_EMBD], xr[N_EMBD], tmp[4*N_EMBD];
+    int32_t total_score = 0;
+
+    <span class="d">// KV cache for attention</span>
+    int32_t k_cache[N_LAYER][BLOCK_SZ][N_EMBD];
+    int32_t v_cache[N_LAYER][BLOCK_SZ][N_EMBD];
+
+    for (int pos = 0; pos &lt; n_tokens - 1; pos++) {
+        <span class="d">// Embedding: x = wte[token] + wpe[pos]</span>
+        for (int j = 0; j &lt; N_EMBD; j++)
+            x[j] = ((int32_t)w-&gt;wte[tokens[pos]][j]
+                  + (int32_t)w-&gt;wpe[pos][j]) &lt;&lt; (FRAC_BITS/2);
+
+        <span class="d">// rmsnorm(x) — normalize</span>
+        rmsnorm(x, N_EMBD);
+
+        <span class="d">// Transformer layers</span>
+        for (int li = 0; li &lt; N_LAYER; li++) {
+            memcpy(xr, x, sizeof(x));  <span class="d">// save for residual</span>
+            rmsnorm(x, N_EMBD);
+
+            <span class="d">// Attention: Q*K^T/sqrt(d) -> softmax -> *V</span>
+            <span class="d">// ... (multi-head attention with KV cache) ...</span>
+
+            <span class="d">// MLP: expand -> relu -> compress</span>
+            linear(tmp, (int16_t*)w-&gt;f1[li], x, 4*N_EMBD, N_EMBD);
+            relu(tmp, 4*N_EMBD);
+            linear(x, (int16_t*)w-&gt;f2[li], tmp, N_EMBD, 4*N_EMBD);
+
+            <span class="d">// Residual connection</span>
+            for (int j = 0; j &lt; N_EMBD; j++) x[j] += xr[j];
+        }
+
+        <span class="d">// lm_head -> score</span>
+        int32_t logits[VOCAB];
+        linear(logits, (int16_t*)w-&gt;lm_head, x, VOCAB, N_EMBD);
+
+        <span class="d">// -log(softmax(logits)[target]) = surprise</span>
+        total_score += neg_log_softmax(logits, tokens[pos+1], VOCAB);
+    }
+
+    return total_score / (n_tokens - 1);
+}</pre></div>
+
+<div class="co cop"><strong>Train in Python. Deploy in C.</strong> The Python Atom trains with full autograd (floating point, gradient tracking). Export weights, quantize to int16, flash to ESP32. The C firmware only does the forward pass &mdash; no backward pass, no gradients, no optimizer. Just multiply-and-add.</div>
+
+<h3>Weight Export Pipeline</h3>
+<div class="code"><pre><span class="d"># Python: export weights as binary for ESP32</span>
+import struct, json
+
+with open('pulse_weights.json') as f:
+    data = json.load(f)
+
+with open('pulse_weights.bin', 'wb') as f:
+    for name in ['wte','wpe','lm_head','l0.wq','l0.wk', ...]:
+        for row in data['weights'][name]:
+            for val in row:
+                <span class="d"># Quantize float to int16 (Q10 fixed-point)</span>
+                q = int(round(val * 1024))
+                q = max(-32768, min(32767, q))
+                f.write(struct.pack('<span class="g">&lt;h</span>', q))
+
+<span class="d"># Flash to ESP32:</span>
+<span class="d"># esptool.py write_flash 0x100000 pulse_weights.bin</span></pre></div>
+
+<!-- ===== REAL APPLICATIONS ===== -->
+<h2>Real Applications</h2>
+<p>A KIRI node is a $6 board that learns what "normal" looks like for any sensor and alerts on anomalies. No cloud, no subscription, no rules to write. Here's where that matters.</p>
+
+<div class="grid2">
+<div class="app-card">
+<h4 style="color:var(--g)">ISP / Telecom Tower Site</h4>
+<p><strong>Sensors:</strong> Voltage, temperature, router CPU, link quality<br>
+<strong>Tokens:</strong> V0-V4 T0-T9 C0-C9 Q0-Q4<br>
+<strong>Detects:</strong> Power supply degradation, overheating patterns, unusual traffic at 3am, link flapping before total failure. The model learns each tower's baseline and flags deviations specific to that site.</p>
+</div>
+<div class="app-card">
+<h4 style="color:var(--a)">Agricultural Pump Station</h4>
+<p><strong>Sensors:</strong> Motor current (CT clamp), vibration (accelerometer), flow rate<br>
+<strong>Tokens:</strong> I0-I9 V0-V9 F0-F4<br>
+<strong>Detects:</strong> Bearing wear (vibration increases weeks before failure), dry running (flow drops but current stays high), blockages. A $6 node saves a $500 pump.</p>
+</div>
+<div class="app-card">
+<h4 style="color:var(--b)">Solar Inverter Monitoring</h4>
+<p><strong>Sensors:</strong> DC input voltage, AC output, efficiency ratio, temperature<br>
+<strong>Tokens:</strong> D0-D9 A0-D9 E0-E4 T0-T9<br>
+<strong>Detects:</strong> Panel degradation (gradual efficiency drop), inverter faults (output waveform anomalies), shading patterns. Learns diurnal patterns and flags real problems vs normal cloud cover.</p>
+</div>
+<div class="app-card">
+<h4 style="color:var(--p)">Community Water System</h4>
+<p><strong>Sensors:</strong> Pressure transducer, flow meter, chlorine sensor<br>
+<strong>Tokens:</strong> P0-P9 F0-F9 C0-C4<br>
+<strong>Detects:</strong> Pipe leaks (pressure drops), demand surges, treatment system failures. Each node monitors a section of pipe. Anomaly at node 3 but not node 4 = leak between them.</p>
+</div>
+<div class="app-card">
+<h4 style="color:var(--c)">Home Appliance Health</h4>
+<p><strong>Sensors:</strong> Current transformer on power line<br>
+<strong>Tokens:</strong> W0-W9 (power draw buckets)<br>
+<strong>Detects:</strong> Fridge compressor degradation (power draw increases over months), washing machine bearing wear, heater element failure. A single CT clamp per appliance, $6 per monitor.</p>
+</div>
+<div class="app-card">
+<h4 style="color:var(--r)">Workshop / Factory Motor</h4>
+<p><strong>Sensors:</strong> Vibration (ADXL345), current (ACS712), temperature (NTC)<br>
+<strong>Tokens:</strong> V0-V9 I0-I9 T0-T9<br>
+<strong>Detects:</strong> Bearing wear signatures, belt slippage, overload conditions. The model learns each motor's vibration fingerprint. Anomaly = maintenance needed before catastrophic failure.</p>
+</div>
+</div>
+
+<!-- ===== STEPS TO BUILD ===== -->
+<h2>Steps to Build</h2>
+<p>From proof-of-concept to deployed hardware in four stages.</p>
+
+<div class="steps">
+<div class="step-card">
+<h4>Prove It</h4>
+<p>Get an ESP32-S3 dev board (~$8). Port the forward pass to C. Load weights exported from Python. Run the same test observations through both Python and C. Compare scores &mdash; they should match within rounding tolerance (int16 quantization introduces small differences). If scores match, the port works.</p>
+<div class="code"><pre><span class="d">// ESP32 Arduino setup:</span>
+<span class="g">#include "kiri_atom.h"</span>
+<span class="g">#include "pulse_weights.h"</span>  <span class="d">// generated binary header</span>
+
+void setup() {
+    Serial.begin(115200);
+    uint8_t tokens[] = {0, 5, 17, 24, 31, 36, 42}; <span class="d">// BOS C5 M7 D4 S1 L1 N1</span>
+    int32_t score = atom_score(&weights, tokens, 7);
+    Serial.printf("<span class="g">Score: %d.%03d\n</span>", score/SCALE, (score%SCALE)*1000/SCALE);
+}</pre></div>
+</div>
+
+<div class="step-card">
+<h4>Add a Sensor</h4>
+<p>Wire an I2C or ADC sensor to the dev board. Collect 24 hours of data (one reading every 30 seconds = 2,880 observations). Transfer to computer. Train an atom on the data. Export weights back to ESP32. Now the device can score its own sensor readings in real time.</p>
+</div>
+
+<div class="step-card">
+<h4>Design the PCB</h4>
+<p>Open KiCad. Place the ESP32-S3 module, USB-C for power/programming, voltage regulator, sensor headers, and status LEDs. Route on a 4-layer board (signal/ground/power/signal). Generate Gerber files. Upload to a PCB manufacturer. 5 boards for ~$8 shipped.</p>
+</div>
+
+<div class="step-card">
+<h4>Deploy</h4>
+<p>Mount the node where the sensor needs to be. Power via USB-C or battery. Let it collect for 48 hours (building a baseline). Train an atom on the collected data. Flash the weights back. The node now runs independently &mdash; collecting, scoring, and alerting over WiFi when anomalies are detected. No cloud subscription. No ongoing cost.</p>
+</div>
+</div>
+
+<!-- ===== ATOMS AS TRANSISTORS ===== -->
+<h2>Atoms as Transistors</h2>
+<p>The pattern repeats at every level of computing. Each level = many of the level below, hiding complexity and enabling new capabilities.</p>
+
+<canvas id="cvAbstraction" height="280"></canvas>
+
+<h3>The Abstraction Ladder</h3>
+<table>
+<tr><th>Level</th><th>Unit</th><th>Made of</th><th>New capability</th></tr>
+<tr><td>1</td><td><strong>Transistor</strong></td><td>Silicon + dopants</td><td>Amplification, switching</td></tr>
+<tr><td>2</td><td><strong>Logic Gate</strong></td><td>~6 transistors</td><td>Boolean logic (AND, OR, NOT)</td></tr>
+<tr><td>3</td><td><strong>CPU</strong></td><td>~1B gates</td><td>General computation</td></tr>
+<tr><td>4</td><td><strong>Atom</strong></td><td>~28K parameters on a CPU</td><td>Pattern recognition, anomaly detection</td></tr>
+<tr><td>5</td><td><strong>Molecule</strong></td><td>Multiple atoms + Nerve</td><td>Cross-domain reasoning, decisions</td></tr>
+<tr><td>6</td><td><strong>Organism</strong></td><td>Many molecules, networked</td><td>Distributed intelligence, adaptation</td></tr>
+</table>
+
+<h3>The Economics</h3>
+<div class="grid2">
+<div class="card">
+<h4 style="color:var(--r)">Giant Model (Cloud)</h4>
+<p><strong>Cost:</strong> $100M+ to train, $0.01+ per inference<br>
+<strong>Location:</strong> Data center<br>
+<strong>Capability:</strong> General-purpose, impressive at everything<br>
+<strong>Ownership:</strong> Rented access<br>
+<strong>Privacy:</strong> Data leaves your network</p>
+</div>
+<div class="card">
+<h4 style="color:var(--g)">1000 Tiny Models (Local)</h4>
+<p><strong>Cost:</strong> $0 to train, $0 per inference<br>
+<strong>Location:</strong> On each device<br>
+<strong>Capability:</strong> Specialist, excellent at one thing<br>
+<strong>Ownership:</strong> Yours completely<br>
+<strong>Privacy:</strong> Data never leaves the device</p>
+</div>
+</div>
+
+<div class="co cop" style="font-size:15px"><strong>Transistors replaced vacuum tubes where small, cheap, and low-power mattered.</strong> That turned out to be almost everything. Giant models are vacuum tubes &mdash; powerful, expensive, centralized. Tiny models are transistors &mdash; cheap, local, composable. They won't replace large models for general reasoning. But for pattern detection on specific data, running locally, at zero ongoing cost? Tiny models will be everywhere. The same way transistors are everywhere.</div>
+
+<div class="foot">KIRI &mdash; an Eryx Labs project</div>
+
+</div><!-- /w -->
+
+<script>
+// --- Canvas helpers ---
+function setupCanvas(id, h) {
+  const cv = document.getElementById(id);
+  if (!cv) return null;
+  const dpr = devicePixelRatio || 1;
+  cv.width = cv.clientWidth * dpr;
+  cv.height = h * dpr;
+  cv.style.height = h + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, cv.clientWidth, h);
+  return {ctx, W: cv.clientWidth, H: h};
+}
+
+function drawAll() {
+  drawCircuit();
+  drawPCB();
+  drawAbstraction();
+}
+
+// --- Circuit Diagram ---
+function drawCircuit() {
+  const c = setupCanvas('cvCircuit', 320);
+  if (!c) return;
+  const {ctx, W, H} = c;
+
+  const units = [
+    {label: 'SRAM\n(Weights)', col: '#16a34a', x: 0.08, y: 0.15, w: 0.12, h: 0.7},
+    {label: 'Embed\nLookup', col: '#16a34a', x: 0.24, y: 0.15, w: 0.1, h: 0.2},
+    {label: 'RMSNorm', col: '#666670', x: 0.24, y: 0.45, w: 0.1, h: 0.12},
+    {label: 'MAC\nArray', col: '#2563eb', x: 0.38, y: 0.15, w: 0.14, h: 0.3},
+    {label: 'Softmax\nLUT', col: '#7c3aed', x: 0.38, y: 0.55, w: 0.14, h: 0.18},
+    {label: 'ReLU\nComp.', col: '#b45309', x: 0.56, y: 0.15, w: 0.1, h: 0.2},
+    {label: 'Sequencer\n(FSM)', col: '#dc2626', x: 0.56, y: 0.55, w: 0.1, h: 0.18},
+    {label: 'Sensor\nI/O', col: '#0891b2', x: 0.72, y: 0.15, w: 0.1, h: 0.2},
+    {label: 'Score\nOutput', col: '#0891b2', x: 0.72, y: 0.55, w: 0.1, h: 0.18},
+  ];
+
+  // Draw units
+  for (const u of units) {
+    const x = u.x * W, y = u.y * H, w = u.w * W, h = u.h * H;
+    ctx.fillStyle = u.col + '12';
+    ctx.strokeStyle = u.col;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = u.col;
+    ctx.font = '10px IBM Plex Mono';
+    ctx.textAlign = 'center';
+    const lines = u.label.split('\n');
+    const ly = y + h/2 - (lines.length - 1) * 7;
+    lines.forEach((l, i) => ctx.fillText(l, x + w/2, ly + i * 14));
+  }
+
+  // Data flow arrows
+  ctx.strokeStyle = '#d0d0c8';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  const arrows = [
+    [0.20, 0.25, 0.24, 0.25],
+    [0.34, 0.25, 0.38, 0.25],
+    [0.34, 0.51, 0.38, 0.55],
+    [0.52, 0.30, 0.56, 0.25],
+    [0.52, 0.64, 0.56, 0.64],
+    [0.66, 0.25, 0.72, 0.25],
+    [0.66, 0.64, 0.72, 0.64],
+  ];
+  for (const [x1, y1, x2, y2] of arrows) {
+    ctx.beginPath();
+    ctx.moveTo(x1 * W, y1 * H);
+    ctx.lineTo(x2 * W, y2 * H);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Title
+  ctx.fillStyle = '#666670';
+  ctx.font = '9px IBM Plex Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('microgpt as hardware: every software operation maps to a hardware unit', W/2, H - 8);
+
+  // Flow label
+  ctx.fillStyle = '#16a34a';
+  ctx.font = '9px IBM Plex Mono';
+  ctx.textAlign = 'left';
+  ctx.fillText('sensor \u2192 quantize \u2192 embed \u2192 attention \u2192 MLP \u2192 score \u2192 output', W * 0.08, H - 24);
+}
+
+// --- PCB Layout ---
+function drawPCB() {
+  const c = setupCanvas('cvPCB', 340);
+  if (!c) return;
+  const {ctx, W, H} = c;
+
+  // Board outline
+  const bw = Math.min(W * 0.7, 350), bh = bw * 0.7;
+  const bx = (W - bw) / 2, by = (H - bh) / 2;
+
+  // PCB green
+  ctx.fillStyle = '#1a5c2a';
+  ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6); ctx.fill();
+
+  // Ground plane hatching
+  ctx.strokeStyle = '#1e6b32';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < bw + bh; i += 8) {
+    ctx.beginPath();
+    ctx.moveTo(bx + i, by);
+    ctx.lineTo(bx + i - bh, by + bh);
+    ctx.stroke();
+  }
+
+  // Silkscreen text
+  ctx.fillStyle = '#e8e8d0';
+  ctx.font = '9px IBM Plex Mono';
+  ctx.textAlign = 'left';
+  ctx.fillText('KIRI NODE v1', bx + 10, by + 16);
+  ctx.font = '7px IBM Plex Mono';
+  ctx.fillStyle = '#c0c0a0';
+  ctx.fillText('eryxlabs.co.ke', bx + 10, by + 28);
+
+  // ESP32-S3 module (large rectangle)
+  const mx = bx + bw * 0.25, my = by + bh * 0.2;
+  const mw = bw * 0.45, mh = bh * 0.5;
+  ctx.fillStyle = '#111';
+  ctx.beginPath(); ctx.roundRect(mx, my, mw, mh, 3); ctx.fill();
+  ctx.fillStyle = '#888';
+  ctx.font = '8px IBM Plex Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('ESP32-S3-WROOM-1', mx + mw/2, my + mh/2 - 6);
+  ctx.fillText('4MB Flash / 512KB SRAM', mx + mw/2, my + mh/2 + 6);
+  // Antenna area
+  ctx.strokeStyle = '#666';
+  ctx.setLineDash([2, 2]);
+  ctx.beginPath(); ctx.roundRect(mx + mw - mw*0.2, my + 2, mw*0.18, mh - 4, 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font = '6px IBM Plex Mono';
+  ctx.fillStyle = '#666';
+  ctx.fillText('ANT', mx + mw - mw*0.11, my + mh/2);
+
+  // USB-C connector (bottom)
+  const ux = bx + bw * 0.1, uy = by + bh - 20;
+  ctx.fillStyle = '#555';
+  ctx.beginPath(); ctx.roundRect(ux, uy, 26, 14, 3); ctx.fill();
+  ctx.fillStyle = '#e8e8d0';
+  ctx.font = '6px IBM Plex Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('USB-C', ux + 13, uy - 3);
+
+  // Voltage regulator (SOT-223)
+  ctx.fillStyle = '#222';
+  ctx.fillRect(bx + bw * 0.1, by + bh * 0.35, 16, 10);
+  ctx.fillStyle = '#c0c0a0';
+  ctx.font = '5px IBM Plex Mono';
+  ctx.textAlign = 'left';
+  ctx.fillText('3.3V', bx + bw * 0.1, by + bh * 0.35 - 2);
+
+  // Status LEDs
+  const ledY = by + bh * 0.15;
+  const leds = [{col: '#4ade80', label: 'OK'}, {col: '#fbbf24', label: 'ANOM'}, {col: '#f87171', label: 'ERR'}];
+  leds.forEach((led, i) => {
+    const lx = bx + bw * 0.78 + i * 16;
+    ctx.fillStyle = led.col;
+    ctx.beginPath(); ctx.arc(lx, ledY, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#c0c0a0';
+    ctx.font = '5px IBM Plex Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(led.label, lx, ledY + 12);
+  });
+
+  // Sensor header pins (2x4)
+  ctx.fillStyle = '#c0a030';
+  const hx = bx + bw * 0.75, hy = by + bh * 0.45;
+  for (let r = 0; r < 2; r++) {
+    for (let c2 = 0; c2 < 4; c2++) {
+      ctx.fillRect(hx + c2 * 8, hy + r * 8, 5, 5);
+    }
+  }
+  ctx.fillStyle = '#c0c0a0';
+  ctx.font = '6px IBM Plex Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('SENSOR', hx + 14, hy - 4);
+  // Pin labels
+  ctx.font = '4px IBM Plex Mono';
+  ctx.textAlign = 'left';
+  const pins = ['3V3','GND','SDA','SCL','A0','A1','TX','RX'];
+  pins.forEach((p, i) => {
+    const pr = Math.floor(i / 4), pc = i % 4;
+    ctx.fillText(p, hx + pc * 8, hy + pr * 8 + 16);
+  });
+
+  // Mounting holes
+  ctx.strokeStyle = '#c0c0a0';
+  ctx.lineWidth = 0.5;
+  [[bx + 8, by + 8], [bx + bw - 8, by + 8], [bx + 8, by + bh - 8], [bx + bw - 8, by + bh - 8]].forEach(([hx2, hy2]) => {
+    ctx.beginPath(); ctx.arc(hx2, hy2, 3, 0, Math.PI * 2); ctx.stroke();
+  });
+
+  // Dimensions
+  ctx.fillStyle = '#666670';
+  ctx.font = '9px IBM Plex Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('50 mm', bx + bw/2, by + bh + 20);
+  ctx.save();
+  ctx.translate(bx - 16, by + bh/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('35 mm', 0, 0);
+  ctx.restore();
+}
+
+// --- Abstraction Ladder ---
+function drawAbstraction() {
+  const c = setupCanvas('cvAbstraction', 280);
+  if (!c) return;
+  const {ctx, W, H} = c;
+
+  const levels = [
+    {label: 'Transistor', sub: 'silicon switch', col: '#666670', sz: 0.06},
+    {label: 'Logic Gate', sub: '~6 transistors', col: '#0891b2', sz: 0.09},
+    {label: 'CPU', sub: '~1B gates', col: '#2563eb', sz: 0.13},
+    {label: 'Atom', sub: '28K params', col: '#16a34a', sz: 0.18},
+    {label: 'Molecule', sub: '4 atoms + Nerve', col: '#7c3aed', sz: 0.24},
+    {label: 'Organism', sub: 'networked molecules', col: '#b45309', sz: 0.30},
+  ];
+
+  const startX = W * 0.1;
+  const endX = W * 0.9;
+  const stepX = (endX - startX) / (levels.length - 1);
+
+  // Connection lines
+  ctx.strokeStyle = '#d0d0c8';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < levels.length - 1; i++) {
+    const x1 = startX + i * stepX;
+    const x2 = startX + (i + 1) * stepX;
+    ctx.beginPath();
+    ctx.moveTo(x1, H * 0.5);
+    ctx.lineTo(x2, H * 0.5);
+    ctx.stroke();
+  }
+
+  // Level circles
+  for (let i = 0; i < levels.length; i++) {
+    const lv = levels[i];
+    const x = startX + i * stepX;
+    const y = H * 0.5;
+    const r = Math.min(W, H) * lv.sz / 2;
+
+    // Circle
+    ctx.fillStyle = lv.col + '15';
+    ctx.strokeStyle = lv.col;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Label
+    ctx.fillStyle = lv.col;
+    ctx.font = '10px IBM Plex Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(lv.label, x, y + r + 18);
+
+    // Sub label
+    ctx.fillStyle = '#666670';
+    ctx.font = '8px IBM Plex Mono';
+    ctx.fillText(lv.sub, x, y + r + 30);
+
+    // Inner text
+    if (r > 15) {
+      ctx.fillStyle = lv.col;
+      ctx.font = `${Math.max(7, r * 0.35)}px IBM Plex Mono`;
+      ctx.fillText(lv.label.charAt(0), x, y + 4);
+    }
+  }
+
+  // Title
+  ctx.fillStyle = '#666670';
+  ctx.font = '9px IBM Plex Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('each level = many of the level below, hiding complexity, enabling new capabilities', W/2, H - 10);
+}
+
+// --- Init ---
+drawAll();
+window.addEventListener('resize', drawAll);
+</script>
+</body>
+</html>

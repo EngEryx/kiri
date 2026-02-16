@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIRI — Data to Prediction Walkthrough</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf9f7;--s1:#f0efec;--s2:#e8e6e1;--bdr:#d4d0c8;--tx:#1a1a1a;--dim:#666;--g:#0d9488;--a:#b45309;--r:#be123c;--b:#4f46e5;--p:#7c3aed;
+--sans:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;--serif:'Newsreader',serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:15px;line-height:1.8}
+.page{max-width:780px;margin:0 auto;padding:32px 24px 100px}
+h1{font-family:var(--serif);font-size:30px;font-weight:400;margin-bottom:4px}
+h2{font-family:var(--serif);font-size:22px;font-weight:400;margin:40px 0 10px;padding-top:20px;border-top:1px solid var(--bdr)}
+h3{font-size:11px;color:var(--g);letter-spacing:2px;text-transform:uppercase;margin:28px 0 10px;font-weight:600}
+p{margin-bottom:14px;color:#333}
+strong{font-weight:600}
+code{font-family:var(--mono);font-size:13px;background:var(--s1);padding:2px 6px;border-radius:3px}
+.sub{font-size:16px;color:var(--dim);font-family:var(--serif);font-style:italic;margin-bottom:24px}
+
+/* Stage boxes */
+.stage{background:white;border:1px solid var(--bdr);border-radius:6px;margin:16px 0;overflow:hidden}
+.stage-head{padding:12px 20px;font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:1px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+.stage-body{padding:16px 20px;border-top:1px solid var(--s2);font-size:14px}
+.stage-body p{margin-bottom:10px;font-size:14px}
+
+.sg{border-top:3px solid var(--g)}.sg .stage-head{color:var(--g)}
+.sa{border-top:3px solid var(--a)}.sa .stage-head{color:var(--a)}
+.sb{border-top:3px solid var(--b)}.sb .stage-head{color:var(--b)}
+.sr{border-top:3px solid var(--r)}.sr .stage-head{color:var(--r)}
+.sp{border-top:3px solid var(--p)}.sp .stage-head{color:var(--p)}
+
+/* Token display */
+.tok{display:inline-block;font-family:var(--mono);font-size:12px;padding:3px 8px;border-radius:4px;margin:2px 3px 2px 0;font-weight:500}
+.tok-g{background:#f0fdf4;color:#065f46;border:1px solid #a7f3d0}
+.tok-a{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.tok-r{background:#fff1f2;color:#9f1239;border:1px solid #fecdd3}
+.tok-b{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}
+.tok-p{background:#f5f3ff;color:#5b21b6;border:1px solid #ddd6fe}
+.tok-d{background:#f1f5f9;color:#334155;border:1px solid #cbd5e1}
+
+/* Score display */
+.score-row{display:flex;align-items:center;gap:12px;margin:8px 0;font-family:var(--mono);font-size:13px}
+.score-bar{flex:1;height:8px;background:var(--s1);border-radius:4px;overflow:hidden}
+.score-fill{height:100%;border-radius:4px}
+.score-val{min-width:40px;text-align:right;font-weight:500}
+.score-label{min-width:30px;color:var(--dim)}
+
+/* Arrow between stages */
+.arrow{text-align:center;color:var(--bdr);font-size:20px;margin:8px 0;font-family:var(--mono)}
+
+/* Note boxes */
+.note{border-left:4px solid;padding:12px 16px;margin:14px 0;border-radius:0 6px 6px 0;font-size:14px}
+.note-g{border-color:var(--g);background:#f0fdf4}
+.note-a{border-color:var(--a);background:#fffbeb}
+
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th{text-align:left;padding:6px 8px;border-bottom:2px solid var(--bdr);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);font-weight:600}
+td{padding:6px 8px;border-bottom:1px solid var(--s2);font-family:var(--mono);font-size:13px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+
+/* Nav */
+.doc-nav{display:flex;gap:0;border-bottom:1px solid var(--bdr);margin-bottom:24px;overflow-x:auto;font-family:var(--mono)}
+.doc-nav a{color:var(--dim);font-size:11px;padding:10px 14px;text-decoration:none;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.5px;white-space:nowrap}
+.doc-nav a:hover{color:var(--tx)}
+.doc-nav a.on{color:var(--g);border-bottom-color:var(--g)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="doc-nav">
+  <a href="index.html">explainer</a>
+  <a href="trace.html">pipeline trace</a>
+  <a class="on" href="walkthrough.html">walkthrough</a>
+  <a href="monitor.html">monitor</a>
+  <a href="research/understand.html">research</a>
+  <a href="research/hardware.html">hardware</a>
+</div>
+
+<h1>Data to Prediction</h1>
+<p class="sub">Walking through your actual live data from this morning. Every number, every step.</p>
+
+<p>This is your Mac Mini right now: Monday 10:39 AM. CPU 56%, Memory 72%, Disk 54%, Swap 74%, Load 5.0. You're working. The system has been running 35 hours and seen 19,925 observations.</p>
+
+<p>Here's exactly what happens every 30 seconds.</p>
+
+<!-- ===== STAGE 1: COLLECT ===== -->
+<h2>Stage 1: Collect</h2>
+
+<div class="stage sg">
+<div class="stage-head"><span>Raw Metrics</span><span>~1ms</span></div>
+<div class="stage-body">
+<p>The system reads your Mac's vital signs using stdlib calls only — <code>subprocess</code> to <code>top</code>, <code>vm_stat</code>, <code>sysctl</code>, <code>df</code>. Zero external dependencies. On an ESP32 it would be sensor reads.</p>
+
+<table>
+<tr><th>Metric</th><th>Value</th><th>Source</th></tr>
+<tr><td style="color:var(--g)">CPU</td><td>50.51%</td><td>top -l 1 (parsed)</td></tr>
+<tr><td style="color:var(--g)">Memory</td><td>72.27%</td><td>vm_stat + sysctl hw.memsize</td></tr>
+<tr><td style="color:var(--g)">Disk</td><td>54.0%</td><td>df / (parsed)</td></tr>
+<tr><td style="color:var(--g)">Swap</td><td>73.59%</td><td>sysctl vm.swapusage</td></tr>
+<tr><td style="color:var(--g)">Load</td><td>4.25</td><td>sysctl vm.loadavg</td></tr>
+<tr><td style="color:var(--g)">Network</td><td>1 (up)</td><td>socket connect test</td></tr>
+<tr><td style="color:var(--b)">Idle Time</td><td>2.5s</td><td>IOKit HIDIdleTime</td></tr>
+<tr><td style="color:var(--b)">Activity</td><td>0.24/min</td><td>key/mouse events per minute</td></tr>
+<tr><td style="color:var(--dim)">Hour</td><td>10</td><td>datetime.now().hour</td></tr>
+<tr><td style="color:var(--dim)">Weekday</td><td>0 (Mon)</td><td>datetime.now().weekday()</td></tr>
+</table>
+
+<p>This is the raw truth. Just numbers. No interpretation yet.</p>
+</div>
+</div>
+
+<!-- ===== STAGE 2: QUANTIZE ===== -->
+<div class="arrow">↓</div>
+<h2>Stage 2: Quantize</h2>
+
+<div class="stage sa">
+<div class="stage-head"><span>Numbers → Tokens</span><span>microseconds</span></div>
+<div class="stage-body">
+<p>Each number gets placed into a <strong>bucket</strong>. CPU 50.51% falls in the 50-60% range = bucket 5. Memory 72.27% = bucket 7. This is <code>language.py</code> — the same idea as a tokenizer in GPT, but for numbers instead of words.</p>
+
+<p><strong>Why buckets?</strong> The transformer predicts discrete tokens, not continuous numbers. "CPU went from bucket 3 to bucket 5" is a learnable pattern. "CPU went from 31.247% to 50.512%" is noise.</p>
+
+<h3>Pulse Tokens (6 tokens)</h3>
+<table>
+<tr><th>Metric</th><th>Raw Value</th><th>Bucket Rule</th><th>Token</th></tr>
+<tr><td>CPU 50.51%</td><td>÷10, floor</td><td>50-59% → 5</td><td><span class="tok tok-g">C5</span></td></tr>
+<tr><td>Memory 72.27%</td><td>÷10, floor</td><td>70-79% → 7</td><td><span class="tok tok-g">M7</span></td></tr>
+<tr><td>Disk 54.0%</td><td>÷10, floor</td><td>50-59% → 5</td><td><span class="tok tok-g">D5</span></td></tr>
+<tr><td>Swap 73.59%</td><td>÷20, floor</td><td>60-79% → 3</td><td><span class="tok tok-g">S3</span></td></tr>
+<tr><td>Load 4.25</td><td>÷4, floor</td><td>4.0-7.99 → 1</td><td><span class="tok tok-g">L1</span></td></tr>
+<tr><td>Network up</td><td>boolean</td><td>up → 1</td><td><span class="tok tok-g">N1</span></td></tr>
+</table>
+<p style="font-size:12px;color:var(--dim)">Swap has 5 buckets (0-100%, each 20%). Load has 5 buckets (0-20, each 4 units).</p>
+
+<p>Pulse sequence: <span class="tok tok-g">C5</span> <span class="tok tok-g">M7</span> <span class="tok tok-g">D5</span> <span class="tok tok-g">S3</span> <span class="tok tok-g">L1</span> <span class="tok tok-g">N1</span></p>
+
+<h3>Rhythm Tokens (4 tokens)</h3>
+<table>
+<tr><th>Metric</th><th>Raw Value</th><th>Token</th></tr>
+<tr><td>Idle 2.5s</td><td>bucket 0-7 by duration</td><td><span class="tok tok-b">I0</span> (very short idle = active)</td></tr>
+<tr><td>Activity 0.24/min</td><td>bucket 0-5 by rate</td><td><span class="tok tok-b">A0</span> (low activity)</td></tr>
+<tr><td>Hour 10</td><td>÷3, floor</td><td><span class="tok tok-b">H3</span> (morning)</td></tr>
+<tr><td>Weekday 0</td><td>direct</td><td><span class="tok tok-b">W0</span> (Monday)</td></tr>
+</table>
+
+<p>Rhythm sequence: <span class="tok tok-b">I0</span> <span class="tok tok-b">A0</span> <span class="tok tok-b">H3</span> <span class="tok tok-b">W0</span></p>
+
+<p>Your entire Mac state is now <strong>10 tokens</strong>. This is the vocabulary the model speaks.</p>
+</div>
+</div>
+
+<!-- ===== STAGE 3: PREDICT (ATOMS) ===== -->
+<div class="arrow">↓</div>
+<h2>Stage 3: Predict (Atoms)</h2>
+
+<div class="stage sb">
+<div class="stage-head"><span>Pulse Atom — 27,840 params</span><span>~1ms on MPS</span></div>
+<div class="stage-body">
+<p>The Pulse atom is a tiny GPT. It was trained on 15,000+ observations of your Mac. It learned patterns like: "after C2 M7, D3 is the most likely next token."</p>
+
+<p>Now it processes your current sequence token by token:</p>
+
+<table>
+<tr><th>Step</th><th>Input</th><th>Model Predicts</th><th>Actually Got</th><th>Surprise</th></tr>
+<tr><td>1</td><td><span class="tok tok-d">BOS</span></td><td>C2 (38%), C3 (25%)</td><td><span class="tok tok-g">C5</span></td><td style="color:var(--r)"><strong>4.386</strong> — never seen C5 much</td></tr>
+<tr><td>2</td><td><span class="tok tok-g">C5</span></td><td>M7 (85%), M6 (10%)</td><td><span class="tok tok-g">M7</span></td><td style="color:var(--g)"><strong>0.296</strong> — expected this</td></tr>
+<tr><td>3</td><td><span class="tok tok-g">M7</span></td><td>D3 (45%), D4 (30%)</td><td><span class="tok tok-g">D5</span></td><td style="color:var(--a)"><strong>2.936</strong> — disk higher than usual</td></tr>
+<tr><td>4</td><td><span class="tok tok-g">D5</span></td><td>S1 (40%), S2 (30%)</td><td><span class="tok tok-g">S3</span></td><td style="color:var(--r)"><strong>4.878</strong> — swap much higher than expected</td></tr>
+<tr><td>5</td><td><span class="tok tok-g">S3</span></td><td>L0 (50%), L1 (35%)</td><td><span class="tok tok-g">L1</span></td><td style="color:var(--a)"><strong>1.366</strong> — slightly surprising</td></tr>
+<tr><td>6</td><td><span class="tok tok-g">L1</span></td><td>N1 (99%)</td><td><span class="tok tok-g">N1</span></td><td style="color:var(--g)"><strong>0.017</strong> — network always up</td></tr>
+</table>
+
+<p><strong>How "surprise" works:</strong> The model outputs a probability for every possible next token. If it predicted M7 with 85% probability and M7 actually appeared, surprise = -log(0.85) = 0.16 (low). If it predicted C2 but got C5 (maybe 1% probability), surprise = -log(0.01) = 4.6 (high).</p>
+
+<p><strong>That's the entire mechanism.</strong> Surprise = -log(probability the model assigned to what actually happened). High surprise = the model didn't expect this = anomaly.</p>
+</div>
+</div>
+
+<div class="stage sb" style="border-top-color:var(--b)">
+<div class="stage-head"><span>Rhythm Atom — 27,008 params</span><span>~1ms on MPS</span></div>
+<div class="stage-body">
+<p>Same process, different vocabulary:</p>
+
+<table>
+<tr><th>Step</th><th>Input</th><th>Predicts</th><th>Got</th><th>Surprise</th></tr>
+<tr><td>1</td><td><span class="tok tok-d">BOS</span></td><td>I0 (60%)</td><td><span class="tok tok-b">I0</span></td><td style="color:var(--a)"><strong>1.747</strong></td></tr>
+<tr><td>2</td><td><span class="tok tok-b">I0</span></td><td>A0 (99%)</td><td><span class="tok tok-b">A0</span></td><td style="color:var(--g)"><strong>0.011</strong></td></tr>
+<tr><td>3</td><td><span class="tok tok-b">A0</span></td><td>H5 (25%), H6 (25%)</td><td><span class="tok tok-b">H3</span></td><td style="color:var(--a)"><strong>1.884</strong> — usually sees evening</td></tr>
+<tr><td>4</td><td><span class="tok tok-b">H3</span></td><td>W5 (60%), W6 (20%)</td><td><span class="tok tok-b">W0</span></td><td style="color:var(--r)"><strong>4.229</strong> — never seen Monday!</td></tr>
+</table>
+
+<p>Notice: <span class="tok tok-b">W0</span> (Monday) scores <strong>4.229</strong> — the highest surprise. The model was trained mostly on Saturday and Sunday data. It's never seen a Monday before. That's why W0 is surprising. After a week of weekday data, this score will drop.</p>
+</div>
+</div>
+
+<!-- ===== STAGE 4: SCORE ===== -->
+<div class="arrow">↓</div>
+<h2>Stage 4: Score</h2>
+
+<div class="stage sa">
+<div class="stage-head"><span>Average Surprise → Anomaly Score</span><span>microseconds</span></div>
+<div class="stage-body">
+
+<p><strong>Pulse score</strong> = average of all per-token surprises:</p>
+<p style="font-family:var(--mono);font-size:13px">(4.386 + 0.296 + 2.936 + 4.878 + 1.366 + 0.017) ÷ 6 = <strong>2.313</strong></p>
+
+<div class="score-row">
+<span class="score-label">C5</span>
+<div class="score-bar"><div class="score-fill" style="width:55%;background:var(--r)"></div></div>
+<span class="score-val" style="color:var(--r)">4.39</span>
+</div>
+<div class="score-row">
+<span class="score-label">M7</span>
+<div class="score-bar"><div class="score-fill" style="width:4%;background:var(--g)"></div></div>
+<span class="score-val" style="color:var(--g)">0.30</span>
+</div>
+<div class="score-row">
+<span class="score-label">D5</span>
+<div class="score-bar"><div class="score-fill" style="width:37%;background:var(--a)"></div></div>
+<span class="score-val" style="color:var(--a)">2.94</span>
+</div>
+<div class="score-row">
+<span class="score-label">S3</span>
+<div class="score-bar"><div class="score-fill" style="width:61%;background:var(--r)"></div></div>
+<span class="score-val" style="color:var(--r)">4.88</span>
+</div>
+<div class="score-row">
+<span class="score-label">L1</span>
+<div class="score-bar"><div class="score-fill" style="width:17%;background:var(--a)"></div></div>
+<span class="score-val" style="color:var(--a)">1.37</span>
+</div>
+<div class="score-row">
+<span class="score-label">N1</span>
+<div class="score-bar"><div class="score-fill" style="width:0.5%;background:var(--g)"></div></div>
+<span class="score-val" style="color:var(--g)">0.02</span>
+</div>
+
+<p style="margin-top:14px"><strong>Rhythm score</strong> = (1.747 + 0.011 + 1.884 + 4.229) ÷ 4 = <strong>1.968</strong></p>
+
+<p>The threshold is 2.0. Pulse (2.31) is above it → "elevated." Rhythm (1.97) is just below → "normal."</p>
+
+<div class="note note-a">
+<strong>What you can read from the per-token scores:</strong><br><br>
+M7 (memory 72%) scored 0.30 — the model has seen this many times. Normal.<br>
+S3 (swap 73%) scored 4.88 — the model hasn't seen swap this high often. Concerning.<br>
+W0 (Monday) scored 4.23 — first Monday ever. The model will learn this next week.<br><br>
+The per-token breakdown tells you exactly WHY the model is surprised, not just that it is.
+</div>
+</div>
+</div>
+
+<!-- ===== STAGE 5: DECIDE (MOLECULE) ===== -->
+<div class="arrow">↓</div>
+<h2>Stage 5: Decide (Molecule)</h2>
+
+<div class="stage sp">
+<div class="stage-head"><span>Molecule — 157,824 params — MoE Transformer</span><span>~2ms on MPS</span></div>
+<div class="stage-body">
+
+<p>The molecule sees EVERYTHING the atoms see, plus their scores, plus time context. Its input is a unified sequence of all domains:</p>
+
+<h3>Molecule Input (20 tokens)</h3>
+<p>
+<span class="tok tok-d">BOS</span>
+<span class="tok tok-g">p.C5</span>
+<span class="tok tok-g">p.M7</span>
+<span class="tok tok-g">p.D5</span>
+<span class="tok tok-g">p.S3</span>
+<span class="tok tok-g">p.L1</span>
+<span class="tok tok-g">p.N1</span>
+<span class="tok tok-b">r.I0</span>
+<span class="tok tok-b">r.A0</span>
+<span class="tok tok-b">r.H3</span>
+<span class="tok tok-b">r.W0</span>
+<span class="tok tok-a">PS2</span>
+<span class="tok tok-a">RS1</span>
+<span class="tok tok-a">DS0</span>
+<span class="tok tok-p">H3</span>
+<span class="tok tok-p">W0</span>
+</p>
+
+<p>Notice the <strong>prefixes</strong>: <code>p.C5</code> means "Pulse CPU bucket 5." <code>r.I0</code> means "Rhythm Idle bucket 0." <code>PS2</code> means "Pulse Score bucket 2." This prevents collisions — Pulse's C and Drift's C are different tokens.</p>
+
+<h3>Inside the Molecule: MoE Transformer</h3>
+
+<p>The molecule has <strong>4 expert FFN networks</strong>. A gating network looks at each token and decides which 2 experts (out of 4) should process it. This is Mixture of Experts — different experts specialize in different patterns.</p>
+
+<p>The forward pass:</p>
+<table>
+<tr><th>Layer</th><th>What Happens</th></tr>
+<tr><td>Embed</td><td>Each of the 20 tokens → 48-dimensional vector. Position also encoded.</td></tr>
+<tr><td>Layer 1</td><td>Attention: tokens attend to each other. p.S3 (high swap) attends to p.M7 (high mem) — they're related. Gate routes to experts 1,3.</td></tr>
+<tr><td>Layer 2</td><td>Deeper patterns: PS2 (elevated pulse score) attends to p.C5 + p.S3. Gate routes to experts 2,4.</td></tr>
+<tr><td>Layer 3</td><td>Decision layer: combines all evidence. W0 (Monday) + H3 (morning) + elevated scores → routes to experts 1,2.</td></tr>
+<tr><td>Output</td><td>Predict next token: A:alert (100%), A:ok (0%), A:suppress (0%)</td></tr>
+</table>
+
+<p>After predicting the action, the model continues generating: <span class="tok tok-d">EXP</span> → explanation tokens:</p>
+<p><span class="tok tok-r">A:alert</span> <span class="tok tok-d">EXP</span> <span class="tok tok-p">elevated</span> <span class="tok tok-p">above</span> <span class="tok tok-p">at</span> <span class="tok tok-p">high</span> <span class="tok tok-p">anomaly</span> <span class="tok tok-d">END</span></p>
+
+<p>The explanation vocabulary is ~50 diagnostic words. The model picks words autoregressively — same as GPT generating text, but constrained to domain-specific vocabulary.</p>
+</div>
+</div>
+
+<!-- ===== STAGE 6: EXPLAIN ===== -->
+<div class="arrow">↓</div>
+<h2>Stage 6: Explain</h2>
+
+<div class="stage sr">
+<div class="stage-head"><span>Explanation Output</span><span>generated by molecule</span></div>
+<div class="stage-body">
+<p style="font-size:18px;font-family:var(--serif);color:var(--r)"><em>"elevated above at high anomaly"</em></p>
+
+<p>This is the molecule's best attempt at explaining why it chose "alert." It's saying: scores are elevated, something is above normal, high anomaly detected.</p>
+
+<p>The explanation quality depends on training data. Right now the molecule trained mostly on synthetic templates. As it retrains on more real observations (it's at 4,300+ sequences and climbing), the explanations will become more specific — eventually something like "cpu high swap elevated during morning" instead of generic "elevated above at high."</p>
+</div>
+</div>
+
+<!-- ===== STAGE 7: ACT ===== -->
+<div class="arrow">↓</div>
+<h2>Stage 7: Act</h2>
+
+<div class="stage sg">
+<div class="stage-head"><span>Action Taken</span><span>result</span></div>
+<div class="stage-body">
+<p>Based on the molecule's decision:</p>
+<table>
+<tr><th>Action</th><th>What Happens</th></tr>
+<tr><td style="color:var(--g)"><strong>ok</strong></td><td>Log the observation. Do nothing. Everything is normal.</td></tr>
+<tr><td style="color:var(--r)"><strong>alert</strong> ← this time</td><td>Log + flag as anomaly. In daemon mode, could send Telegram/email.</td></tr>
+<tr><td style="color:var(--a)"><strong>suppress</strong></td><td>Log but don't alert. The model recognizes this pattern as "known unusual" — like high CPU during builds.</td></tr>
+<tr><td style="color:var(--b)"><strong>retrain</strong></td><td>The model thinks it's seeing patterns outside its training. Triggers a retrain cycle.</td></tr>
+</table>
+
+<p>This observation was logged. The alert was sent. 30 seconds from now, the whole cycle repeats.</p>
+</div>
+</div>
+
+<!-- ===== PUTTING IT ALL TOGETHER ===== -->
+<h2>The Complete Picture</h2>
+
+<div class="note note-g">
+<strong>Your Mac at 10:39 AM Monday:</strong><br><br>
+
+<strong>1. Collect:</strong> CPU 50%, MEM 72%, Swap 73%, Load 4.2<br>
+<strong>2. Quantize:</strong> C5 M7 D5 S3 L1 N1 · I0 A0 H3 W0<br>
+<strong>3. Atoms predict:</strong> Pulse surprised by C5 and S3 (unusual CPU and swap). Rhythm surprised by W0 (first Monday ever).<br>
+<strong>4. Score:</strong> Pulse 2.31 (above threshold). Rhythm 1.97 (just below).<br>
+<strong>5. Molecule decides:</strong> alert at 100% — it combines cross-domain evidence and says this is unusual enough to flag.<br>
+<strong>6. Explains:</strong> "elevated above at high anomaly"<br>
+<strong>7. Acts:</strong> Logged + alert sent.<br><br>
+
+<strong>Why it's alerting:</strong> The model learned weekends. Monday morning with active work is genuinely new to it. The swap at 73% is higher than the model usually expects. After a few weekdays of data + auto-retrains, Monday mornings will become "ok."<br><br>
+
+<strong>Total time:</strong> ~5 milliseconds. Then sleeps 30 seconds. Repeats. 19,925 times so far.
+</div>
+
+<h2>What Each Component Knows</h2>
+
+<table style="font-family:var(--sans);font-size:14px">
+<tr><th>Component</th><th>Params</th><th>Sees</th><th>Learns</th><th>Outputs</th></tr>
+<tr><td><strong>Pulse Atom</strong></td><td>27,840</td><td>CPU, MEM, Disk, Swap, Load, Net</td><td>"After M7, D3 is normal"</td><td>Per-token surprise scores</td></tr>
+<tr><td><strong>Rhythm Atom</strong></td><td>27,008</td><td>Idle time, Activity, Hour, Weekday</td><td>"At H5 W5, I3 is normal"</td><td>Per-token surprise scores</td></tr>
+<tr><td><strong>Drift Atom</strong></td><td>~27K</td><td>Tasks added/completed/switched</td><td>"3 added 2 completed is normal"</td><td>Per-token surprise scores</td></tr>
+<tr><td><strong>Molecule</strong></td><td>157,824</td><td>All atom tokens + scores + time</td><td>"Elevated pulse + night = alert, elevated pulse + weekday = suppress"</td><td>Action + explanation</td></tr>
+</table>
+
+<p style="margin-top:20px;color:var(--dim);font-size:13px;text-align:center;font-family:var(--mono)">KIRI — an Eryx Labs project</p>
+
+</div>
+</body>
+</html>

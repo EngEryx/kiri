@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIRI Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#06070a;--s1:#0c0d12;--s2:#12131a;--bdr:#1a1c24;
+  --tx:#d8d5cf;--dim:#555566;--g:#4ade80;--a:#fbbf24;--r:#f87171;
+  --b:#60a5fa;--p:#c084fc;--c:#22d3ee;
+  --mono:'JetBrains Mono',monospace;--hd:'Fraunces',serif;
+}
+:root.light {
+  --bg:#f8f8f6;--s1:#ffffff;--s2:#f0f0ec;--bdr:#d8d8d0;
+  --tx:#1a1a1a;--dim:#666670;--g:#16a34a;--a:#b45309;--r:#dc2626;
+  --b:#2563eb;--p:#7c3aed;--c:#0891b2;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:var(--mono);font-size:12px;line-height:1.5}
+
+/* Nav */
+.nav{display:flex;gap:0;border-bottom:1px solid var(--bdr);overflow-x:auto;position:sticky;top:0;background:var(--bg);z-index:110;padding-top:8px;align-items:center}
+.nav a{background:none;border:none;color:var(--dim);font-family:var(--mono);font-size:11px;padding:10px 16px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.5px;text-decoration:none;display:block}
+.nav a:hover{color:var(--tx)}
+.nav a.on{color:var(--g);border-bottom-color:var(--g)}
+.theme-toggle{margin-left:auto;background:none;border:1px solid var(--bdr);color:var(--dim);font-family:var(--mono);font-size:11px;padding:5px 12px;cursor:pointer;border-radius:100px;transition:all .2s;flex-shrink:0}
+.theme-toggle:hover{color:var(--tx);border-color:var(--dim)}
+
+/* Connection bar */
+.conn{position:sticky;top:42px;z-index:100;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;background:var(--s1);border-bottom:1px solid var(--bdr);font-size:11px}
+.conn-dot{width:8px;height:8px;border-radius:50%;margin-right:8px;display:inline-block}
+.conn-dot.on{background:var(--g);box-shadow:0 0 6px var(--g)}
+.conn-dot.off{background:var(--r)}
+.conn-ok{color:var(--g)}.conn-err{color:var(--r)}
+
+/* Grid */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;max-width:1440px;margin:0 auto}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+/* Panel */
+.panel{background:var(--s1);border:1px solid var(--bdr);border-radius:4px;overflow:hidden}
+.panel-head{padding:10px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)}
+.panel-head .dot{width:6px;height:6px;border-radius:50%}
+.panel-body{padding:14px}
+
+/* Section label */
+.slabel{font-size:9px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin:12px 0 6px;font-weight:400}
+.slabel:first-child{margin-top:0}
+
+/* Metric bar */
+.mrow{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.mlabel{width:38px;color:var(--dim);font-size:9px;text-transform:uppercase;letter-spacing:1px;flex-shrink:0}
+.mbar{flex:1;height:5px;background:var(--s2);border-radius:3px;overflow:hidden}
+.mfill{height:100%;border-radius:3px;transition:width .4s ease,background .4s ease}
+.mval{width:52px;text-align:right;font-size:11px;flex-shrink:0}
+
+/* Score */
+.score-big{font-size:28px;font-weight:700;margin:10px 0 4px;transition:color .3s}
+.verdict{display:inline-block;padding:2px 10px;border-radius:100px;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;border:1px solid;transition:all .3s}
+.verdict.normal{color:var(--g);border-color:var(--g)}
+.verdict.elevated{color:var(--a);border-color:var(--a)}
+.verdict.anomaly{color:var(--r);border-color:var(--r)}
+.verdict.not_trained{color:var(--dim);border-color:var(--dim)}
+.verdict.error{color:var(--r);border-color:var(--dim)}
+
+/* Molecule action badge */
+.action-badge{display:inline-block;padding:3px 12px;border-radius:100px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border:1px solid}
+.action-badge.ok{color:var(--g);border-color:var(--g);background:rgba(74,222,128,.08)}
+.action-badge.alert{color:var(--r);border-color:var(--r);background:rgba(248,113,113,.08)}
+.action-badge.suppress{color:var(--a);border-color:var(--a);background:rgba(251,191,36,.08)}
+.action-badge.retrain{color:var(--p);border-color:var(--p);background:rgba(192,132,252,.08)}
+.mol-explain{color:var(--tx);font-size:11px;margin-top:6px;font-style:italic;opacity:.85}
+.prob-bars{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.prob-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--dim)}
+.prob-bar{height:4px;border-radius:2px;min-width:2px;transition:width .3s}
+
+/* Tokens */
+.tokens{display:flex;gap:3px;margin-top:8px;flex-wrap:wrap}
+.tok{padding:1px 5px;border-radius:2px;font-size:9px;border:1px solid var(--bdr);transition:all .3s}
+
+/* Button */
+.btn{background:none;border:1px solid var(--bdr);color:var(--tx);font-family:inherit;font-size:10px;padding:5px 12px;border-radius:3px;cursor:pointer;transition:all .2s}
+.btn:hover{border-color:var(--g);color:var(--g)}
+.btn:disabled{opacity:.3;cursor:default}
+.btn:disabled:hover{border-color:var(--bdr);color:var(--tx)}
+
+/* Input */
+.inp{width:55px;background:var(--s2);border:1px solid var(--bdr);color:var(--tx);font-family:inherit;font-size:10px;padding:5px 6px;border-radius:3px;text-align:center}
+
+/* Canvas */
+canvas{width:100%;border:1px solid var(--bdr);border-radius:3px;background:var(--s2)}
+
+/* Pipeline stages */
+.pipe{display:flex;flex-direction:column;gap:0}
+.pipe-row{display:flex;align-items:stretch;gap:0;transition:opacity .3s}
+.pipe-label{width:68px;flex-shrink:0;padding:8px 0;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;align-items:center}
+.pipe-data{flex:1;padding:8px 10px;border-left:2px solid var(--bdr);font-size:10px;color:var(--tx);min-height:28px;transition:border-color .3s,box-shadow .3s}
+.pipe-row.pending{opacity:.2}
+.pipe-row.active .pipe-data{border-left-color:var(--g);box-shadow:-2px 0 8px rgba(74,222,128,.25)}
+.pipe-row.active .pipe-label{color:var(--g)}
+.pipe-row.done .pipe-data{border-left-color:var(--g)}
+.pipe-row.done .pipe-label{color:var(--g);opacity:.8}
+.pipe-vals{display:flex;gap:8px;flex-wrap:wrap;font-size:10px}
+.pipe-tok{display:inline-block;padding:1px 4px;border-radius:2px;font-size:9px;border:1px solid var(--bdr)}
+
+/* Stats */
+.srow{display:flex;gap:14px;margin-top:12px;font-size:9px;color:var(--dim);flex-wrap:wrap}
+.sn{color:var(--tx);font-weight:500}
+
+/* Offline */
+.offline{padding:40px 20px;color:var(--dim);text-align:center;line-height:2;display:block}
+.offline code{display:block;background:var(--s2);padding:12px 16px;margin:12px auto;max-width:420px;border-radius:3px;color:var(--g);text-align:left;font-size:11px;line-height:1.8}
+
+/* Sparklines */
+.spark{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+.spark-item{display:flex;align-items:center;gap:6px}
+.spark-label{font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;width:28px}
+.spark-bars{display:flex;align-items:flex-end;gap:1px;height:16px}
+.spark-bar{width:2px;border-radius:1px;transition:height .2s}
+
+/* Footer */
+.footer{text-align:center;padding:24px 16px 32px;font-size:10px;color:var(--dim);letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="index.html">explainer</a>
+  <a href="trace.html">pipeline trace</a>
+  <a href="walkthrough.html">walkthrough</a>
+  <a href="research/understand.html">research</a>
+  <a href="research/hardware.html">hardware</a>
+  <a class="on" href="monitor.html">monitor</a>
+  <button class="theme-toggle" id="themeToggle">light</button>
+</div>
+
+<div class="conn">
+  <div style="display:flex;align-items:center">
+    <span class="conn-dot off" id="cDot"></span>
+    <span class="conn-err" id="cLabel">not connected</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span id="cUptime" style="color:var(--dim);font-size:10px"></span>
+  </div>
+</div>
+
+<div id="offline" class="offline">
+  Not connected to KIRI server.<br>Start it:
+  <code>source ~/Binnode/kiri-env/bin/activate<br>cd ~/Binnode<br>python3 -m kiri.run</code>
+</div>
+
+<div class="grid" id="grid" style="display:none">
+
+<!-- ===== LIVE ===== -->
+<div class="panel">
+  <div class="panel-head">
+    <div class="dot" style="background:var(--g)" id="liveDot"></div>
+    LIVE
+    <span id="liveAge" style="margin-left:auto;font-size:9px;color:var(--dim)"></span>
+  </div>
+  <div class="panel-body">
+    <div class="slabel" style="color:var(--g)">Pulse &mdash; Infrastructure</div>
+    <div id="pMetrics"></div>
+    <div style="display:flex;gap:16px;align-items:flex-end;margin-top:6px">
+      <div>
+        <div style="color:var(--dim);font-size:8px;letter-spacing:1px">ANOMALY SCORE</div>
+        <div class="score-big" id="pScore">&mdash;</div>
+      </div>
+      <span class="verdict not_trained" id="pVerdict">&mdash;</span>
+    </div>
+    <div class="tokens" id="pTokens"></div>
+
+    <div class="slabel" style="margin-top:14px;color:var(--b)">Rhythm &mdash; Work Pattern</div>
+    <div id="rMetrics"></div>
+    <div style="display:flex;gap:16px;align-items:flex-end;margin-top:6px">
+      <div>
+        <div style="color:var(--dim);font-size:8px;letter-spacing:1px">ANOMALY SCORE</div>
+        <div class="score-big" id="rScore">&mdash;</div>
+      </div>
+      <span class="verdict not_trained" id="rVerdict">&mdash;</span>
+    </div>
+    <div class="tokens" id="rTokens"></div>
+  </div>
+</div>
+
+<!-- ===== MOLECULE ===== -->
+<div class="panel">
+  <div class="panel-head">
+    <div class="dot" style="background:var(--p)" id="molDot"></div>
+    MOLECULE
+    <span id="molStatus" style="margin-left:auto;font-size:9px;color:var(--dim)"></span>
+  </div>
+  <div class="panel-body">
+    <div id="molOffline" style="color:var(--dim);font-size:10px">waiting for data...</div>
+    <div id="molOnline" style="display:none">
+      <div class="slabel" style="color:var(--p)">Decision</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+        <span class="action-badge ok" id="molAction">&mdash;</span>
+        <span id="molRetraining" style="color:var(--a);font-size:9px;display:none">retraining...</span>
+        <span id="molConfidence" style="font-size:9px;color:var(--dim)"></span>
+      </div>
+      <div class="mol-explain" id="molExplain">&mdash;</div>
+
+      <div class="slabel" style="margin-top:12px">Action Probabilities</div>
+      <div class="prob-bars" id="molProbs"></div>
+
+      <div class="slabel" style="margin-top:12px">Model</div>
+      <div style="font-size:10px;color:var(--dim)">
+        params: <span class="sn" id="molParams">&mdash;</span>
+        &middot; device: <span class="sn" id="molDevice">&mdash;</span>
+      </div>
+      <div style="font-size:10px;color:var(--dim);margin-top:3px">
+        last retrained: <span class="sn" id="molLastRetrain">&mdash;</span>
+        &middot; obs since: <span class="sn" id="molObsSince">&mdash;</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TRAINING ===== -->
+<div class="panel">
+  <div class="panel-head">
+    <div class="dot" style="background:var(--a)"></div>
+    TRAINING
+  </div>
+  <div class="panel-body">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="btnP" onclick="retrain('pulse')">Retrain Pulse</button>
+      <button class="btn" id="btnR" onclick="retrain('rhythm')">Retrain Rhythm</button>
+      <button class="btn" id="btnM" onclick="retrain('molecule')" style="border-color:var(--p);color:var(--p)">Retrain Molecule</button>
+      <input type="number" class="inp" id="stepsIn" value="300" min="50" max="2000">
+      <span style="color:var(--dim);font-size:9px">steps</span>
+    </div>
+    <div id="trainStatus" style="margin-top:8px;color:var(--dim);font-size:10px">ready</div>
+    <canvas id="lossC" height="170" style="margin-top:8px"></canvas>
+    <div id="trainHist" style="margin-top:8px;color:var(--dim);font-size:9px"></div>
+  </div>
+</div>
+
+<!-- ===== HISTORY ===== -->
+<div class="panel">
+  <div class="panel-head">
+    <div class="dot" style="background:var(--b)"></div>
+    HISTORY
+    <div style="margin-left:auto;display:flex;gap:4px">
+      <button class="btn" style="font-size:8px;padding:2px 8px" id="hPBtn" onclick="loadHist('pulse')">pulse</button>
+      <button class="btn" style="font-size:8px;padding:2px 8px;border-color:var(--dim)" id="hRBtn" onclick="loadHist('rhythm')">rhythm</button>
+    </div>
+  </div>
+  <div class="panel-body">
+    <canvas id="histC" height="190"></canvas>
+    <div id="histDetail" style="margin-top:6px;color:var(--dim);font-size:9px">click chart for details</div>
+    <div class="spark" id="sparklines"></div>
+    <div class="srow">
+      <span>entries: <span class="sn" id="hCount">&mdash;</span></span>
+      <span>range: <span class="sn" id="hRange">&mdash;</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== THE LOOP — pipeline with real data ===== -->
+<div class="panel" style="grid-column:1/-1">
+  <div class="panel-head">
+    <div class="dot" style="background:var(--p)"></div>
+    THE LOOP
+    <span style="margin-left:auto;font-size:9px;color:var(--dim)" id="loopTs"></span>
+  </div>
+  <div class="panel-body">
+    <div class="pipe" id="pipe">
+      <div class="pipe-row" data-s="collect">
+        <div class="pipe-label">collect</div>
+        <div class="pipe-data"><div class="pipe-vals" id="pipeCollect">waiting...</div></div>
+      </div>
+      <div class="pipe-row" data-s="quantize">
+        <div class="pipe-label">quantize</div>
+        <div class="pipe-data"><div id="pipeQuantize" style="display:flex;gap:3px;flex-wrap:wrap"></div></div>
+      </div>
+      <div class="pipe-row" data-s="predict">
+        <div class="pipe-label">predict</div>
+        <div class="pipe-data"><div class="pipe-vals" id="pipePredict"></div></div>
+      </div>
+      <div class="pipe-row" data-s="score">
+        <div class="pipe-label">score</div>
+        <div class="pipe-data"><div class="pipe-vals" id="pipeScore"></div></div>
+      </div>
+      <div class="pipe-row" data-s="decide">
+        <div class="pipe-label">decide</div>
+        <div class="pipe-data"><div class="pipe-vals" id="pipeDecide"></div></div>
+      </div>
+      <div class="pipe-row" data-s="explain">
+        <div class="pipe-label">explain</div>
+        <div class="pipe-data"><div id="pipeExplain" style="font-style:italic;opacity:.85"></div></div>
+      </div>
+      <div class="pipe-row" data-s="act">
+        <div class="pipe-label">act</div>
+        <div class="pipe-data"><div class="pipe-vals" id="pipeAct"></div></div>
+      </div>
+    </div>
+
+    <div class="srow" style="justify-content:center;margin-top:16px">
+      <span>observations <span class="sn" id="lObs">&mdash;</span></span>
+      <span>anomalies <span class="sn" id="lAnoms">&mdash;</span></span>
+      <span>uptime <span class="sn" id="lUp">&mdash;</span></span>
+    </div>
+    <div class="srow" style="justify-content:center;margin-top:4px">
+      <span>pulse <span class="sn" id="lPP">&mdash;</span> params</span>
+      <span>rhythm <span class="sn" id="lRP">&mdash;</span> params</span>
+      <span>molecule <span class="sn" id="lMP">&mdash;</span> params</span>
+      <span>trained <span class="sn" id="lLT">&mdash;</span></span>
+    </div>
+  </div>
+</div>
+
+</div><!-- /grid -->
+
+<div class="footer">KIRI &mdash; an Eryx Labs project</div>
+
+<script>
+const API = window.location.origin;
+const $ = id => document.getElementById(id);
+let hAtom = 'pulse', hData = [], tLosses = [], tHist = [];
+
+// --- Theme toggle ---
+const toggle=$('themeToggle');
+toggle.addEventListener('click',()=>{
+  document.documentElement.classList.toggle('light');
+  const isLight=document.documentElement.classList.contains('light');
+  toggle.textContent=isLight?'dark':'light';
+  localStorage.setItem('kiri-theme',isLight?'light':'dark');
+});
+if(localStorage.getItem('kiri-theme')==='light'){
+  document.documentElement.classList.add('light');
+  toggle.textContent='dark';
+}
+
+// --- Metric definitions ---
+const PDEF = [
+  {k:'C',l:'CPU',u:'%',mx:100,w:50,c:80},
+  {k:'M',l:'MEM',u:'%',mx:100,w:70,c:85},
+  {k:'D',l:'DISK',u:'%',mx:100,w:70,c:85},
+  {k:'S',l:'SWAP',u:'%',mx:100,w:50,c:80},
+  {k:'L',l:'LOAD',u:'',mx:20,w:5,c:10},
+];
+const RDEF = [
+  {k:'I',l:'IDLE',u:'s',mx:3600,w:1800,c:3000},
+  {k:'A',l:'ACT',u:'/m',mx:60,w:0,c:0},
+];
+
+function mColor(v,w,c){
+  if(c>0&&v>=c)return'var(--r)';
+  if(w>0&&v>=w)return'var(--a)';
+  return'var(--g)';
+}
+function sColor(s){return s<2?'var(--g)':s<5?'var(--a)':'var(--r)'}
+function fmt(v){return typeof v==='number'?(v<10?v.toFixed(1):Math.round(v)):v}
+function fmtTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h?h+'h '+m+'m':m+'m'}
+
+// --- Render metrics ---
+function renderM(el, defs, m) {
+  let h = '';
+  for(const d of defs){
+    const v=m[d.k]??0, pct=Math.min(100,(v/d.mx)*100), col=mColor(v,d.w,d.c);
+    h+=`<div class="mrow"><span class="mlabel">${d.l}</span><div class="mbar"><div class="mfill" style="width:${pct}%;background:${col}"></div></div><span class="mval" style="color:${col}">${fmt(v)}${d.u}</span></div>`;
+  }
+  if(m.N!==undefined){
+    const up=m.N===1;
+    h+=`<div class="mrow"><span class="mlabel">NET</span><span style="color:${up?'var(--g)':'var(--r)'};font-size:11px">&bull; ${up?'UP':'DOWN'}</span></div>`;
+  }
+  el.innerHTML=h;
+}
+
+// --- Render tokens ---
+function renderTok(el, pt){
+  el.innerHTML=Object.entries(pt||{}).map(([t,s])=>{
+    const c=sColor(s), a=Math.min(1,s/8),
+      rgb=s<2?'74,222,128':s<5?'251,191,36':'248,113,113';
+    return`<span class="tok" style="border-color:${c};color:${c};background:rgba(${rgb},${a*.15})" title="${s}">${t}</span>`;
+  }).join('');
+}
+
+// --- Update atom display ---
+function updateAtom(pfx, d){
+  const sc=$(pfx+'Score'), vd=$(pfx+'Verdict'), tk=$(pfx+'Tokens');
+  const c=sColor(d.score);
+  sc.textContent=d.score.toFixed(2); sc.style.color=c;
+  vd.textContent=d.verdict; vd.className='verdict '+d.verdict;
+  renderTok(tk, d.per_token);
+}
+
+// --- Pipeline animation ---
+const STAGES=['collect','quantize','predict','score','decide','explain','act'];
+let _animId=0;
+
+function animatePipeline(d){
+  _animId++;
+  const myId=_animId;
+
+  // Clear all stages
+  const rows=document.querySelectorAll('.pipe-row');
+  rows.forEach(el=>{ el.className='pipe-row pending'; });
+  $('pipeCollect').innerHTML='';
+  $('pipeQuantize').innerHTML='';
+  $('pipePredict').innerHTML='';
+  $('pipeScore').innerHTML='';
+  $('pipeDecide').innerHTML='';
+  $('pipeExplain').textContent='';
+  $('pipeAct').innerHTML='';
+
+  $('loopTs').textContent=d.timestamp?.split('T')[1]?.substring(0,8)||'';
+
+  const renderers={
+    collect(){
+      const pm=d.pulse.metrics, rm=d.rhythm.metrics;
+      let cv='';
+      for(const def of PDEF){
+        const v=pm[def.k]??0, col=mColor(v,def.w,def.c);
+        cv+=`<span style="color:${col}">${def.l} ${fmt(v)}${def.u}</span>`;
+      }
+      if(pm.N!==undefined) cv+=`<span style="color:${pm.N===1?'var(--g)':'var(--r)'}">NET ${pm.N===1?'UP':'DOWN'}</span>`;
+      for(const def of RDEF){
+        const v=rm[def.k]??0;
+        cv+=`<span style="color:var(--b)">${def.l} ${fmt(v)}${def.u}</span>`;
+      }
+      $('pipeCollect').innerHTML=cv;
+    },
+    quantize(){
+      const allTokens=(d.pulse.tokens+' '+d.rhythm.tokens).trim().split(/\s+/);
+      let thtml='';
+      for(const t of allTokens){
+        const pt=d.pulse.per_token[t]||d.rhythm.per_token[t];
+        const sc=pt??0, c=sColor(sc);
+        thtml+=`<span class="pipe-tok" style="border-color:${c};color:${c}">${t}</span>`;
+      }
+      $('pipeQuantize').innerHTML=thtml;
+    },
+    predict(){
+      const pn=d.pulse.tokens?d.pulse.tokens.trim().split(/\s+/).length:0;
+      const rn=d.rhythm.tokens?d.rhythm.tokens.trim().split(/\s+/).length:0;
+      $('pipePredict').innerHTML=
+        `<span style="color:var(--g)">pulse atom</span><span style="color:var(--dim)">${pn} tokens \u2192 forward pass</span>`+
+        `<span style="color:var(--b)">rhythm atom</span><span style="color:var(--dim)">${rn} tokens \u2192 forward pass</span>`;
+    },
+    score(){
+      const psc=d.pulse.score, rsc=d.rhythm.score;
+      $('pipeScore').innerHTML=
+        `<span style="color:${sColor(psc)}">pulse ${psc.toFixed(2)}</span>`+
+        `<span style="color:${sColor(rsc)}">rhythm ${rsc.toFixed(2)}</span>`+
+        `<span style="color:var(--dim)">threshold 2.0</span>`;
+    },
+    decide(){
+      const mol=d.molecule;
+      if(mol&&mol.available){
+        const probColors={ok:'var(--g)',alert:'var(--r)',suppress:'var(--a)',retrain:'var(--p)'};
+        const topProb=mol.action_probs?Math.max(...Object.values(mol.action_probs)):0;
+        let dhtml=`<span class="action-badge ${mol.action||'ok'}">${mol.action}</span>`;
+        dhtml+=`<span style="color:var(--dim)">${(topProb*100).toFixed(1)}% confidence</span>`;
+        if(mol.action_probs){
+          for(const[a,p] of Object.entries(mol.action_probs)){
+            const w=Math.max(2,Math.round(p*100));
+            dhtml+=`<span style="color:var(--dim)">${a} <span style="display:inline-block;width:${w}px;height:3px;background:${probColors[a]||'var(--dim)'};border-radius:2px;vertical-align:middle"></span> ${(p*100).toFixed(1)}%</span>`;
+          }
+        }
+        $('pipeDecide').innerHTML=dhtml;
+      }else{
+        $('pipeDecide').innerHTML='<span style="color:var(--dim)">molecule not loaded</span>';
+      }
+    },
+    explain(){
+      const mol=d.molecule;
+      $('pipeExplain').textContent=(mol&&mol.available)?(mol.explanation||'(no explanation)'):'';
+    },
+    act(){
+      const mol=d.molecule;
+      if(mol&&mol.available){
+        const actMap={
+          ok:{icon:'\u2713',label:'logged',col:'var(--g)'},
+          alert:{icon:'!',label:'alert sent',col:'var(--r)'},
+          suppress:{icon:'\u2014',label:'suppressed',col:'var(--a)'},
+          retrain:{icon:'\u21bb',label:'queued retrain',col:'var(--p)'}
+        };
+        const a=actMap[mol.action]||actMap.ok;
+        $('pipeAct').innerHTML=`<span style="color:${a.col};font-weight:700">${a.icon}</span><span style="color:${a.col}">${a.label}</span>`;
+      }else{
+        $('pipeAct').innerHTML='<span style="color:var(--dim)">\u2014</span>';
+      }
+    }
+  };
+
+  STAGES.forEach((stage,i)=>{
+    setTimeout(()=>{
+      if(_animId!==myId)return;
+      if(i>0){
+        const prev=document.querySelector(`.pipe-row[data-s="${STAGES[i-1]}"]`);
+        if(prev) prev.className='pipe-row done';
+      }
+      const row=document.querySelector(`.pipe-row[data-s="${stage}"]`);
+      if(row) row.className='pipe-row active';
+      renderers[stage]();
+    },i*500);
+  });
+
+  setTimeout(()=>{
+    if(_animId!==myId)return;
+    const last=document.querySelector('.pipe-row[data-s="act"]');
+    if(last) last.className='pipe-row done';
+  },STAGES.length*500);
+}
+
+// --- Poll status ---
+const ANIM_MS=STAGES.length*500;
+const POLL_PAUSE=2000;
+
+async function poll(){
+  try{
+    const r=await fetch(API+'/api/status');
+    const d=await r.json();
+
+    $('cDot').className='conn-dot on';
+    $('cLabel').className='conn-ok'; $('cLabel').textContent='connected';
+    $('offline').style.display='none'; $('grid').style.display='grid';
+
+    const up=d.stats.uptime_seconds;
+    $('cUptime').textContent=fmtTime(up);
+
+    renderM($('pMetrics'), PDEF, d.pulse.metrics);
+    renderM($('rMetrics'), RDEF, d.rhythm.metrics);
+    updateAtom('p', d.pulse);
+    updateAtom('r', d.rhythm);
+
+    const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const hh=d.pulse.metrics.H, ww=d.rhythm.metrics.W;
+    $('liveAge').textContent='now'+(hh!=null?' \u00b7 '+hh+':00':'')+(ww!=null?' \u00b7 '+days[ww]:'');
+
+    $('lObs').textContent=(d.stats.total_observations||0).toLocaleString();
+    $('lAnoms').textContent=(d.stats.total_anomalies||0).toLocaleString();
+    $('lUp').textContent=fmtTime(up);
+    $('lPP').textContent=d.stats.pulse_params?d.stats.pulse_params.toLocaleString():'not trained';
+    $('lRP').textContent=d.stats.rhythm_params?d.stats.rhythm_params.toLocaleString():'not trained';
+    $('lLT').textContent=d.stats.last_trained?new Date(d.stats.last_trained).toLocaleTimeString():'never';
+
+    // Molecule panel
+    const mol=d.molecule;
+    if(mol&&mol.available){
+      $('molOffline').style.display='none';
+      $('molOnline').style.display='block';
+      const ba=$('molAction');
+      ba.textContent=mol.action;
+      ba.className='action-badge '+(mol.action||'ok');
+      $('molExplain').textContent=mol.explanation||'\u2014';
+      $('molRetraining').style.display=mol.retraining?'inline':'none';
+      const topProb=mol.action_probs?Math.max(...Object.values(mol.action_probs)):0;
+      $('molConfidence').textContent=topProb<0.5?'low confidence':'';
+      $('molConfidence').style.color=topProb<0.5?'var(--a)':'var(--dim)';
+      const probs=mol.action_probs||{};
+      const probColors={ok:'var(--g)',alert:'var(--r)',suppress:'var(--a)',retrain:'var(--p)'};
+      let ph='';
+      for(const[a,p] of Object.entries(probs)){
+        const w=Math.max(2,Math.round(p*120));
+        ph+=`<div class="prob-item"><span style="width:48px">${a}</span><div class="prob-bar" style="width:${w}px;background:${probColors[a]||'var(--dim)'}"></div><span>${(p*100).toFixed(1)}%</span></div>`;
+      }
+      $('molProbs').innerHTML=ph;
+      $('molParams').textContent=d.stats.molecule_params?d.stats.molecule_params.toLocaleString():'\u2014';
+      $('molDevice').textContent=d.stats.molecule_device||'\u2014';
+      $('molLastRetrain').textContent=d.stats.molecule_last_retrained?new Date(d.stats.molecule_last_retrained).toLocaleTimeString():'never';
+      $('molObsSince').textContent=d.stats.molecule_obs_since_retrain??'\u2014';
+      $('molStatus').textContent=mol.retraining?'retraining...':'live';
+    }else{
+      $('molOffline').style.display='block';
+      $('molOnline').style.display='none';
+      $('molOffline').textContent=mol?.reason||'molecule not available';
+      $('molStatus').textContent='offline';
+    }
+    $('lMP').textContent=d.stats.molecule_params?d.stats.molecule_params.toLocaleString():'not loaded';
+
+    // Animate pipeline — wait for it to finish before next poll
+    animatePipeline(d);
+    setTimeout(poll, ANIM_MS+POLL_PAUSE);
+  }catch(e){
+    $('cDot').className='conn-dot off';
+    $('cLabel').className='conn-err'; $('cLabel').textContent='not connected';
+    $('cUptime').textContent='';
+    $('offline').style.display='block'; $('grid').style.display='none';
+    setTimeout(poll, POLL_PAUSE);
+  }
+}
+
+// --- History ---
+async function loadHist(atom){
+  hAtom=atom||hAtom;
+  $('hPBtn').style.borderColor=hAtom==='pulse'?'var(--g)':'var(--bdr)';
+  $('hRBtn').style.borderColor=hAtom==='rhythm'?'var(--b)':'var(--bdr)';
+  try{
+    const r=await fetch(`${API}/api/history?n=200&atom=${hAtom}`);
+    hData=await r.json();
+    drawHist();
+    drawSpark();
+    $('hCount').textContent=hData.length;
+    if(hData.length){
+      const a=hData[0].timestamp?.split('T')[1]?.substring(0,5)||'';
+      const b=hData[hData.length-1].timestamp?.split('T')[1]?.substring(0,5)||'';
+      $('hRange').textContent=a+' \u2192 '+b;
+    }
+  }catch(e){$('hCount').textContent='—'}
+}
+
+function drawHist(){
+  const cv=$('histC'), ctx=cv.getContext('2d');
+  const dpr=devicePixelRatio||1;
+  cv.width=cv.clientWidth*dpr; cv.height=cv.clientHeight*dpr;
+  ctx.scale(dpr,dpr);
+  const W=cv.clientWidth, H=cv.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  if(!hData.length){
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--dim');
+    ctx.font='11px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('no data',W/2,H/2);return;
+  }
+  const sc=hData.map(d=>d.score), mx=Math.max(8,...sc)*1.1;
+  const p={t:10,r:10,b:20,l:35}, cw=W-p.l-p.r, ch=H-p.t-p.b;
+
+  const dimC=getComputedStyle(document.documentElement).getPropertyValue('--dim');
+
+  // threshold
+  const ty=p.t+ch*(1-2/mx);
+  ctx.strokeStyle='rgba(251,191,36,.25)';ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(p.l,ty);ctx.lineTo(W-p.r,ty);ctx.stroke();ctx.setLineDash([]);
+
+  // Y axis
+  ctx.fillStyle=dimC;ctx.font='8px JetBrains Mono';ctx.textAlign='right';
+  for(let s=0;s<=mx;s+=2){
+    const y=p.t+ch*(1-s/mx);ctx.fillText(s.toFixed(0),p.l-4,y+3);
+  }
+
+  // line
+  ctx.beginPath();
+  for(let i=0;i<sc.length;i++){
+    const x=p.l+(i/Math.max(1,sc.length-1))*cw, y=p.t+ch*(1-sc[i]/mx);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle=hAtom==='pulse'?'rgba(74,222,128,.5)':'rgba(96,165,250,.5)';
+  ctx.lineWidth=1.5;ctx.stroke();
+
+  // dots
+  for(let i=0;i<sc.length;i++){
+    const x=p.l+(i/Math.max(1,sc.length-1))*cw, y=p.t+ch*(1-sc[i]/mx);
+    ctx.fillStyle=sc[i]>=5?'#f87171':sc[i]>=2?'#fbbf24':(hAtom==='pulse'?'#4ade80':'#60a5fa');
+    ctx.beginPath();ctx.arc(x,y,sc[i]>=2?2.5:1.5,0,Math.PI*2);ctx.fill();
+  }
+
+  // X labels
+  ctx.fillStyle=dimC;ctx.font='7px JetBrains Mono';ctx.textAlign='center';
+  const step=Math.max(1,Math.floor(sc.length/6));
+  for(let i=0;i<sc.length;i+=step){
+    const x=p.l+(i/Math.max(1,sc.length-1))*cw;
+    ctx.fillText(hData[i].timestamp?.split('T')[1]?.substring(0,5)||'',x,H-4);
+  }
+}
+
+// sparklines
+function drawSpark(){
+  const el=$('sparklines');
+  if(!hData.length){el.innerHTML='';return;}
+  const keys=hAtom==='pulse'?['C','M','D','S','L']:['I','A'];
+  const colors={C:'var(--g)',M:'var(--b)',D:'var(--a)',S:'var(--p)',L:'var(--c)',I:'var(--b)',A:'var(--g)'};
+  const maxes={C:100,M:100,D:100,S:100,L:20,I:3600,A:60};
+  const n=Math.min(40,hData.length), step=Math.max(1,Math.floor(hData.length/n));
+  let html='';
+  for(const k of keys){
+    html+=`<div class="spark-item"><span class="spark-label">${k}</span><div class="spark-bars">`;
+    for(let i=0;i<hData.length;i+=step){
+      const v=hData[i].metrics?.[k]??0, pct=Math.max(2,Math.min(100,(v/(maxes[k]||1))*100));
+      html+=`<div class="spark-bar" style="height:${pct}%;background:${colors[k]||'var(--dim)'}"></div>`;
+    }
+    html+=`</div></div>`;
+  }
+  el.innerHTML=html;
+}
+
+// click detail
+$('histC').addEventListener('click',e=>{
+  if(!hData.length)return;
+  const r=e.target.getBoundingClientRect(), x=(e.clientX-r.left)/r.width;
+  const i=Math.max(0,Math.min(hData.length-1,Math.round(x*(hData.length-1))));
+  const d=hData[i], ms=Object.entries(d.metrics||{}).map(([k,v])=>k+'='+fmt(v)).join(' ');
+  $('histDetail').innerHTML=`<span style="color:var(--tx)">${d.timestamp?.split('T')[1]?.substring(0,8)||'?'}</span> &middot; score: <span style="color:${sColor(d.score)}">${d.score.toFixed(2)}</span> &middot; ${d.verdict} &middot; ${ms}`;
+});
+
+// --- Training ---
+async function retrain(atom){
+  const steps=parseInt($('stepsIn').value)||300;
+  $('btnP').disabled=$('btnR').disabled=$('btnM').disabled=true;
+  $('trainStatus').textContent='training '+atom+'...';
+  tLosses=[];
+  try{
+    const r=await fetch(`${API}/api/train?atom=${atom}&steps=${steps}`,{method:'POST'});
+    const reader=r.body.getReader(), dec=new TextDecoder();
+    let buf='';
+    while(true){
+      const{done,value}=await reader.read();
+      if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n'); buf=lines.pop();
+      for(const line of lines){
+        if(!line.trim())continue;
+        try{
+          const d=JSON.parse(line);
+          if(d.error) $('trainStatus').innerHTML=`<span style="color:var(--r)">error: ${d.error}</span>`;
+          else if(d.info) $('trainStatus').textContent=d.info;
+          else if(d.step){tLosses.push(d);drawLoss();$('trainStatus').textContent=`${atom} \u00b7 step ${d.step}/${d.total} \u00b7 loss ${d.loss.toFixed(3)} \u00b7 lr ${d.lr.toFixed(5)}`;}
+          else if(d.done){
+            $('trainStatus').innerHTML=`<span style="color:var(--g)">done \u00b7 ${d.steps} steps \u00b7 final loss ${d.final_loss.toFixed(3)}</span>`;
+            tHist.push({atom,steps:d.steps,loss:d.final_loss,t:new Date().toLocaleTimeString()});
+            renderTHist();
+          }
+        }catch(pe){}
+      }
+    }
+  }catch(e){$('trainStatus').innerHTML=`<span style="color:var(--r)">failed: ${e.message}</span>`}
+  $('btnP').disabled=$('btnR').disabled=$('btnM').disabled=false;
+}
+
+function drawLoss(){
+  const cv=$('lossC'),ctx=cv.getContext('2d');
+  const dpr=devicePixelRatio||1;
+  cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;
+  ctx.scale(dpr,dpr);
+  const W=cv.clientWidth,H=cv.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  if(!tLosses.length)return;
+  const ls=tLosses.map(d=>d.loss),mx=Math.max(...ls)*1.1;
+  const p={t:8,r:8,b:18,l:36},cw=W-p.l-p.r,ch=H-p.t-p.b;
+  const dimC=getComputedStyle(document.documentElement).getPropertyValue('--dim');
+
+  ctx.strokeStyle='rgba(85,85,102,.15)';
+  for(let l=0;l<=mx;l+=.5){const y=p.t+ch*(1-l/mx);ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(W-p.r,y);ctx.stroke();}
+
+  ctx.fillStyle=dimC;ctx.font='8px JetBrains Mono';ctx.textAlign='right';
+  for(let l=0;l<=mx;l+=1){const y=p.t+ch*(1-l/mx);ctx.fillText(l.toFixed(1),p.l-4,y+3);}
+
+  ctx.beginPath();
+  for(let i=0;i<ls.length;i++){
+    const x=p.l+(i/Math.max(1,ls.length-1))*cw,y=p.t+ch*(1-ls[i]/mx);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle='#fbbf24';ctx.lineWidth=1.5;ctx.stroke();
+
+  const ly=p.t+ch*(1-ls[ls.length-1]/mx);
+  ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(p.l+cw,ly,3,0,Math.PI*2);ctx.fill();
+
+  ctx.fillStyle=dimC;ctx.font='7px JetBrains Mono';ctx.textAlign='center';
+  const tot=tLosses[tLosses.length-1]?.total||ls.length;
+  ctx.fillText(`step ${ls.length}/${tot}`,W/2,H-3);
+}
+
+function renderTHist(){
+  $('trainHist').innerHTML=tHist.slice(-5).map(r=>
+    `<div>${r.t} &middot; ${r.atom} &middot; ${r.steps} steps &middot; loss ${r.loss.toFixed(3)}</div>`
+  ).join('');
+}
+
+// --- Start ---
+poll();
+setTimeout(()=>loadHist('pulse'), 800);
+setInterval(()=>{if($('grid').style.display==='grid')loadHist()}, 30000);
+window.addEventListener('resize',()=>{drawHist();drawLoss()});
+</script>
+</body>
+</html>

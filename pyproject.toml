@@ -1,0 +1,14 @@
+[project]
+name = "kiri"
+version = "0.2.0"
+description = "Intelligent Runtime Inspector — composable tiny intelligence system"
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+omit = ["core/atom_torch.py"]

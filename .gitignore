@@ -2,5 +2,11 @@ __pycache__/
 *.pyc
 data/*.jsonl
 atoms/*/weights/*.json
+atoms/*/weights/*.pt
+atoms/*/weights/*.pt.bak
 .DS_Store
 kiri-index.html
+DONOTCOMMIT_*
+*DONOTCOMMIT*
+.coverage
+data/*.log
